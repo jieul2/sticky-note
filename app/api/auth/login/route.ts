@@ -2,12 +2,21 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 
+
+/*  Test 데이터
+
+test1@example.com / 1234
+test2@example.com / password1
+test3@example.com / qwer1234
+
+*/
 export async function POST(req: Request) {
   try {
     const { email, password } = await req.json();
 
     const user = await prisma.user.findUnique({
       where: { email },
+
     });
 
     if (!user) {
@@ -18,6 +27,7 @@ export async function POST(req: Request) {
     }
 
     const isValid = await bcrypt.compare(password, user.password);
+
 
     if (!isValid) {
       return NextResponse.json(

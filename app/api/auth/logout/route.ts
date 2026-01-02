@@ -1,9 +1,13 @@
+// app/api/auth/logout/route.ts
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 
 export async function POST() {
-  const cookieStore = await cookies();
-  cookieStore.delete('userId');
+  const res = NextResponse.json({ message: '로그아웃 완료' });
+  res.cookies.set('userId', '', { path: '/', maxAge: 0, httpOnly: true, sameSite: 'lax' });
+  return res;
+}
 
-  return NextResponse.json({ message: '로그아웃 완료' });
+// GET 요청으로 접근 시
+export async function GET() {
+  return NextResponse.json({ message: 'POST 요청으로만 로그아웃 가능합니다.' }, { status: 405 });
 }
