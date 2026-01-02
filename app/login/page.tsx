@@ -1,31 +1,36 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+    setError('');
 
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
 
-    const data = await res.json();
-    if (res.ok) {
-      localStorage.setItem("token", data.token);
-      router.push("/");
-    } else {
-      setError(data.error || "로그인 실패");
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.message || '로그인 실패');
+        return;
+      }
+
+      router.push('/');
+    } catch {
+      setError('서버와 연결할 수 없습니다.');
     }
   };
 
@@ -35,11 +40,12 @@ export default function LoginPage() {
         <h2 className="text-3xl font-bold text-center text-indigo-600 dark:text-indigo-400 mb-6">
           Sticky Note 로그인
         </h2>
+
         <form className="space-y-4" onSubmit={handleSubmit}>
           <input
             type="email"
             placeholder="이메일"
-            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-700"
+            className="w-full p-3 border rounded-lg dark:bg-gray-800"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -47,7 +53,7 @@ export default function LoginPage() {
           <input
             type="password"
             placeholder="비밀번호"
-            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-700"
+            className="w-full p-3 border rounded-lg dark:bg-gray-800"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -64,12 +70,9 @@ export default function LoginPage() {
           <p className="text-red-500 text-sm text-center mt-3">{error}</p>
         )}
 
-        <p className="text-center text-sm text-gray-600 dark:text-gray-400 mt-6">
-          아직 계정이 없나요?{" "}
-          <Link
-            href="/signup"
-            className="text-indigo-600 dark:text-indigo-400 font-medium hover:underline"
-          >
+        <p className="text-center text-sm mt-6">
+          아직 계정이 없나요?{' '}
+          <Link href="/signup" className="text-indigo-600 hover:underline">
             회원가입
           </Link>
         </p>

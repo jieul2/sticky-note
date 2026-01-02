@@ -18,5 +18,4 @@ model User {
   password  String
   name      String?
   createdAt DateTime @default(now())
-  tempCol   String? // 임시로 추가
 }
