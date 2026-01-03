@@ -28,7 +28,8 @@ export default function LoginPage() {
         return;
       }
 
-      router.push('/');
+      
+      window.location.assign('/home');
     } catch {
       setError('서버와 연결할 수 없습니다.');
     }
@@ -67,7 +68,9 @@ export default function LoginPage() {
         </form>
 
         {error && (
-          <p className="text-red-500 text-sm text-center mt-3">{error}</p>
+          <p className="text-red-500 text-sm text-center mt-3">
+            {error}
+          </p>
         )}
 
         <p className="text-center text-sm mt-6">
