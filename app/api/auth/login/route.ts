@@ -3,13 +3,6 @@ import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 
 
-/*  Test 데이터
-
-test1@example.com / 1234
-test2@example.com / password1
-test3@example.com / qwer1234
-
-*/
 export async function POST(req: Request) {
   try {
     const { email, password } = await req.json();
@@ -36,7 +29,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // ✅ NextResponse로 쿠키 설정
     const res = NextResponse.json({
       id: user.id,
       email: user.email,

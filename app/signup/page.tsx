@@ -21,13 +21,13 @@ export default function RegPage() {
 
     setError("");
 
-    /* 
+    
     // 1️⃣ 비밀번호 길이 체크
     if (password.length < 8) {
       setError("비밀번호는 8자 이상이어야 합니다.");
       return;
     }
-    */
+    
    
     // 2️⃣ 비밀번호 일치 체크
     if (password !== confirmPassword) {

@@ -5,7 +5,7 @@ import { cookies } from 'next/headers';
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const cookieStore = await cookies(); // ✅ await 필수
+  const cookieStore = await cookies();
   const userId = cookieStore.get('userId')?.value;
 
   if (!userId) {
