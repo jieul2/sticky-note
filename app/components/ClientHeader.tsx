@@ -1,4 +1,5 @@
 'use client';
+
 import dynamic from 'next/dynamic';
 
 // Header를 클라이언트 전용으로 감싸기

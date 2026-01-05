@@ -1,17 +1,19 @@
-'use client';
+"use client";
 
-import { motion } from "framer-motion";
+import { useState } from "react";
+import MemoBoardList from "../components/MemoBoardList";
+import MemoCanvas from "../components/MemoCanvas";
 
-export default function Loadpage() {
-  return ( 
-    <section className="mx-auto max-w-6xl px-6 py-[30%]">
-      <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center" >
-        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">Load</h1>
-      </motion.div>
-    </section>
+export default function LoadPage() {
+  const [selectedBoardId, setSelectedBoardId] = useState<number | null>(null);
+
+  return (
+    <div className="flex h-screen">
+      <MemoBoardList
+        selectedBoardId={selectedBoardId}
+        onSelect={setSelectedBoardId}
+      />
+      <MemoCanvas boardId={selectedBoardId} />
+    </div>
   );
 }
