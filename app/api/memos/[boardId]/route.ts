@@ -2,6 +2,24 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 
+// 전달받는 메모 데이터의 타입을 정의합니다.
+interface MemoUpdateInput {
+  id: number;
+  content: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  fontSize: number;
+  fontColor: string;
+  fontWeight: string;
+  fontFamily: string;
+  backgroundColor: string;
+  borderWidth: number;
+  borderColor: string | null; // 프론트에서 null이 올 수 있음을 명시
+  overflow: string;
+}
+
 /* =========================
    GET : 메모 불러오기
 ========================= */
@@ -84,14 +102,27 @@ export async function PUT(
 
   // 📝 메모 업데이트
   await Promise.all(
-    memos.map((memo: { id: number; content: string }) =>
+    memos.map((memo: MemoUpdateInput) =>
       prisma.memo.update({
         where: {
           id: memo.id,
-          boardId: boardIdNumber, // 안전장치
+          boardId: boardIdNumber,
         },
         data: {
           content: memo.content,
+          x: memo.x,
+          y: memo.y,
+          width: memo.width,
+          height: memo.height,
+          fontSize: memo.fontSize,
+          fontColor: memo.fontColor,
+          fontWeight: memo.fontWeight,
+          fontFamily: memo.fontFamily,
+          backgroundColor: memo.backgroundColor,
+          borderWidth: memo.borderWidth,
+          // borderColor가 null인 경우 빈 문자열("") 또는 기본 컬러("#000000")를 할당하여 에러 방지
+          borderColor: memo.borderColor ?? "#000000",
+          overflow: memo.overflow,
         },
       })
     )

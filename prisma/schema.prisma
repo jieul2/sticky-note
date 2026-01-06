@@ -43,7 +43,7 @@ model Memo {
   backgroundColor String    @default("#ffffff")
   borderWidth     Int       @default(1)
   borderColor     String    @default("#000000")
-  overflow        String    @default("auto")
+  overflow        String    @default("hidden") // "auto"에서 "hidden"으로 변경
   modifiedAt      DateTime  @updatedAt
   board           MemoBoard @relation(fields: [boardId], references: [id])
 }
