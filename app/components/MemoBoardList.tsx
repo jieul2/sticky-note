@@ -47,12 +47,12 @@ export default function MemoBoardList({
     <motion.aside
       animate={{ width: isOpen ? 240 : 48 }}
       transition={{ type: "tween", duration: 0.3 }}
-      className="relative flex flex-col bg-white shadow-md"
+      className="relative flex flex-col shadow-md text-black"
     >
       {/* 토글 버튼 */}
       <button
         onClick={toggleSidebar}
-        className="absolute top-2 right-2 w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm shadow-sm hover:bg-gray-300 focus:outline-none"
+        className="absolute top-2 right-2 w-8 h-8 rounded-full text-black bg-gray-200 flex items-center justify-center text-sm shadow-sm hover:bg-gray-300 focus:outline-none"
       >
         {isOpen ? "◀" : "▶"}
       </button>
@@ -61,7 +61,7 @@ export default function MemoBoardList({
       {isOpen && contentVisible && (
         <div className="flex-1 overflow-y-auto p-4 mt-10">
           {/* 사용자 이름 제목 */}
-          <h3 className="mb-3 font-bold">
+          <h3 className="mb-3 font-bold dark:text-white">
             📁 {boards[0]?.user?.name || "익명"}의 보드
           </h3>
 
@@ -83,7 +83,7 @@ export default function MemoBoardList({
 
       {/* 열린 상태에서만 border-r */}
       {isOpen && (
-        <div className="absolute top-0 right-0 h-full border-r border-gray-300 pointer-events-none" />
+        <div className="absolute top-0 right-0 h-full border-r  pointer-events-none" />
       )}
 
       {/* 사이드바 열릴 때 내용 fade-in */}

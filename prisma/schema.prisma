@@ -40,7 +40,7 @@ model Memo {
   fontColor       String    @default("#000000")
   fontWeight      String    @default("normal")
   fontFamily      String    @default("Arial")
-  backgroundColor String    @default("#ffff88")
+  backgroundColor String    @default("#ffffff")
   borderWidth     Int       @default(1)
   borderColor     String    @default("#000000")
   overflow        String    @default("auto")
