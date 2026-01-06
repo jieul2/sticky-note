@@ -5,6 +5,7 @@ import { Sun, Moon, Save, Settings, LogOut, StickyNote as NoteIcon } from 'lucid
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSave } from './SaveContext';
+import { useSettings } from './SettingsContext'; // 추가
 import SettingsModal from './SettingsModal';
 import { motion } from 'framer-motion';
 
@@ -17,10 +18,10 @@ interface UserInfo {
 export default function Header() {
   const [user, setUser] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
   const pathname = usePathname();
   const { triggerSave, isSaving } = useSave();
+  const { isSettingsOpen, setIsSettingsOpen } = useSettings(); // 컨텍스트 상태 사용
 
   const isBoardActive = pathname.startsWith('/load'); 
 
@@ -49,7 +50,6 @@ export default function Header() {
   return (
     <>
       <header className="sticky top-0 z-50 border-b border-gray-100 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-xl h-16 px-6 flex items-center justify-between transition-colors">
-        {/* Logo Section */}
         <Link href="/" className="flex items-center gap-2.5 group">
           <motion.div 
             whileHover={{ rotate: -5, scale: 1.1 }}
@@ -62,11 +62,10 @@ export default function Header() {
           </span>
         </Link>
 
-        {/* Board Tools (보드 활성화 시에만 노출) */}
         {!loading && user && isBoardActive && (
           <div className="flex items-center gap-2 bg-gray-100/50 dark:bg-zinc-900/50 p-1 rounded-2xl border border-gray-200/50 dark:border-zinc-800/50">
             <button 
-              onClick={() => setIsSettingsOpen(true)} 
+              onClick={() => setIsSettingsOpen(true)} // 컨텍스트 함수 호출
               className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-zinc-800 rounded-xl transition-all active:scale-95 hover:shadow-sm"
             >
               <Settings className="w-4 h-4" />
@@ -85,7 +84,6 @@ export default function Header() {
           </div>
         )}
 
-        {/* Right Section: Theme & Auth */}
         <div className="flex items-center gap-3">
           <button 
             onClick={toggleTheme} 

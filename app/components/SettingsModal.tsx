@@ -61,14 +61,18 @@ const ToggleItem = ({ label, desc, checked, onChange, icon, children }: ToggleIt
 );
 
 export default function SettingsModal({ isOpen, onClose }: Props) {
-  const { settings, updateSettings } = useSettings();
+  const { settings, updateSettings, setIsSettingsOpen } = useSettings();
   
-  // 💡 해결 방법: tempGridSize의 초기값을 settings.gridSize에서 직접 가져오고
-  // 렌더링 도중 상태를 강제 동기화하지 않도록 관리합니다.
   const [tempGridSize, setTempGridSize] = useState<string>(String(settings.gridSize));
   const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
 
-  // 💡 모달이 닫혀 있다가 "열리는 순간"에만 값을 초기화하는 로직
+  // 💡 [해결] handleClose를 useEffect보다 위로 올렸습니다.
+  const handleClose = () => {
+    setIsSettingsOpen(false);
+    onClose();
+  };
+
+  // 모달 오픈 감지 및 임시 값 초기화
   if (isOpen !== prevIsOpen) {
     setPrevIsOpen(isOpen);
     if (isOpen) {
@@ -78,11 +82,13 @@ export default function SettingsModal({ isOpen, onClose }: Props) {
 
   useEffect(() => {
     const handleEsc = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape') {
+        handleClose();
+      }
     };
     if (isOpen) window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   const handleGridSizeBlur = () => {
     let finalValue = Number(tempGridSize);
@@ -102,7 +108,7 @@ export default function SettingsModal({ isOpen, onClose }: Props) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          onClick={onClose}
+          onClick={handleClose}
           className="absolute inset-0 bg-black/60 backdrop-blur-md"
         />
 
@@ -121,7 +127,7 @@ export default function SettingsModal({ isOpen, onClose }: Props) {
               <h2 className="text-xl font-black italic dark:text-white">Canvas <span className="text-yellow-500 not-italic">Settings.</span></h2>
             </div>
             <button 
-              onClick={onClose} 
+              onClick={handleClose} 
               className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-zinc-900 transition-colors group"
             >
               <X className="w-5 h-5 text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white" />
@@ -185,7 +191,7 @@ export default function SettingsModal({ isOpen, onClose }: Props) {
           {/* Footer */}
           <div className="p-8 bg-white dark:bg-zinc-950 border-t border-gray-100 dark:border-zinc-900">
             <button 
-              onClick={onClose} 
+              onClick={handleClose} 
               className="w-full py-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-black rounded-2xl hover:scale-[1.02] active:scale-95 transition-all text-base shadow-xl"
             >
               설정 완료
