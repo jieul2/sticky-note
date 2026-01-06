@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import ContentEditable from 'react-contenteditable';
 import { useSave } from './SaveContext';
+import { useSettings } from './SettingsContext';
 
 type Memo = {
   id: number;
@@ -30,13 +31,13 @@ export default function MemoCanvas({ boardId }: Props) {
   const [maxZIndex, setMaxZIndex] = useState(10);
 
   const { registerSaveHandler } = useSave();
+  const { settings } = useSettings();
   const memosRef = useRef<Memo[]>([]);
 
   useEffect(() => {
     memosRef.current = memos;
   }, [memos]);
 
-  // 메모 불러오기
   useEffect(() => {
     if (!boardId) return;
     fetch(`/api/memos/${boardId}`)
@@ -45,20 +46,17 @@ export default function MemoCanvas({ boardId }: Props) {
       .catch(err => console.error('메모 불러오기 실패:', err));
   }, [boardId]);
 
-  // 겹친 영역(사각형)을 계산하는 함수
   const getOverlapRect = (m1: Memo, m2: Memo) => {
     const x1 = Math.max(m1.x, m2.x);
     const y1 = Math.max(m1.y, m2.y);
     const x2 = Math.min(m1.x + m1.width, m2.x + m2.width);
     const y2 = Math.min(m1.y + m1.height, m2.y + m2.height);
-
     if (x1 < x2 && y1 < y2) {
       return { x: x1, y: y1, width: x2 - x1, height: y2 - y1 };
     }
     return null;
   };
 
-  // 모든 메모 쌍에 대해 겹친 영역 리스트를 가져옴
   const getAllOverlapRects = () => {
     const rects: { key: string; x: number; y: number; width: number; height: number }[] = [];
     for (let i = 0; i < memos.length; i++) {
@@ -72,49 +70,41 @@ export default function MemoCanvas({ boardId }: Props) {
     return rects;
   };
 
-  // 키보드 조작 이벤트 핸들러 (Ctrl+이동, Alt+크기조절)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!selectedId) return;
 
-      const MOVE_STEP = 10;
+      //기본 조절단위 움직이는것 1px , 크기조절 10px
+      const MOVE_STEP = settings.useGridSnap ? 20 : 5; 
       const RESIZE_STEP = 10;
 
       setMemos(prev => {
         return prev.map(m => {
           if (m.id !== selectedId) return m;
+          let { x, y, width, height } = m;
 
-          let nextX = m.x;
-          let nextY = m.y;
-          let nextWidth = m.width;
-          let nextHeight = m.height;
-
-          // 위치 이동 (Ctrl + 방향키) 및 음수 방지
-          if (e.ctrlKey && e.key.startsWith('Arrow')) {
+          if (settings.isMoveEnabled && e.ctrlKey && e.key.startsWith('Arrow')) {
             e.preventDefault();
-            if (e.key === 'ArrowLeft') nextX = Math.max(0, m.x - MOVE_STEP);
-            if (e.key === 'ArrowRight') nextX = m.x + MOVE_STEP;
-            if (e.key === 'ArrowUp') nextY = Math.max(0, m.y - MOVE_STEP);
-            if (e.key === 'ArrowDown') nextY = m.y + MOVE_STEP;
+            if (e.key === 'ArrowLeft') x = Math.max(0, x - MOVE_STEP);
+            if (e.key === 'ArrowRight') x = x + MOVE_STEP;
+            if (e.key === 'ArrowUp') y = Math.max(0, y - MOVE_STEP);
+            if (e.key === 'ArrowDown') y = y + MOVE_STEP;
           }
 
-          // 크기 조절 (Alt + 방향키)
-          if (e.altKey && e.key.startsWith('Arrow')) {
+          if (settings.isResizeEnabled && e.altKey && e.key.startsWith('Arrow')) {
             e.preventDefault();
-            if (e.key === 'ArrowLeft') nextWidth = Math.max(50, m.width - RESIZE_STEP);
-            if (e.key === 'ArrowRight') nextWidth = m.width + RESIZE_STEP;
-            if (e.key === 'ArrowUp') nextHeight = Math.max(50, m.height - RESIZE_STEP);
-            if (e.key === 'ArrowDown') nextHeight = m.height + RESIZE_STEP;
+            if (e.key === 'ArrowLeft') width = Math.max(50, width - RESIZE_STEP);
+            if (e.key === 'ArrowRight') width = width + RESIZE_STEP;
+            if (e.key === 'ArrowUp') height = Math.max(50, height - RESIZE_STEP);
+            if (e.key === 'ArrowDown') height = height + RESIZE_STEP;
           }
-
-          return { ...m, x: nextX, y: nextY, width: nextWidth, height: nextHeight };
+          return { ...m, x, y, width, height };
         });
       });
     };
-
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedId]);
+  }, [selectedId, settings]);
 
   const handleChange = (id: number, html: string) => {
     setMemos(prev => prev.map(m => (m.id === id ? { ...m, content: html } : m)));
@@ -127,7 +117,6 @@ export default function MemoCanvas({ boardId }: Props) {
     setMaxZIndex(prev => prev + 1);
   };
 
-  // 저장 버튼 클릭 시만 서버로 PUT
   useEffect(() => {
     if (!boardId) return;
     registerSaveHandler(async () => {
@@ -137,22 +126,20 @@ export default function MemoCanvas({ boardId }: Props) {
         body: JSON.stringify({ memos: memosRef.current }),
       });
       if (!res.ok) throw new Error('저장 실패');
-      console.log('메모 저장 완료!');
     });
   }, [boardId, registerSaveHandler]);
 
-  if (!boardId) return <div className="flex-1 p-6">보드를 선택하세요</div>;
+  if (!boardId) return <div className="flex-1 p-6 text-center text-gray-500">보드를 선택하세요</div>;
 
   const overlapRects = getAllOverlapRects();
 
   return (
-    <div className="relative flex-1 p-6 overflow-hidden" onClick={() => setSelectedId(null)}>
-      {/* 1. 실제 메모들 */}
+    <div className="relative flex-1 p-6 overflow-hidden bg-gray-50 dark:bg-zinc-900" onClick={() => setSelectedId(null)}>
       {memos.map(memo => (
         <div
           key={memo.id}
-          className={`absolute rounded shadow-md border ${
-            selectedId === memo.id ? 'ring-2 ring-blue-500 border-transparent' : 'border-gray-300 dark:border-gray-600'
+          className={`absolute rounded-lg shadow-sm border bg-white dark:bg-zinc-800 transition-shadow ${
+            selectedId === memo.id ? 'ring-2 ring-blue-500 border-transparent shadow-lg' : 'border-gray-200 dark:border-zinc-700'
           }`}
           style={{
             left: memo.x,
@@ -162,29 +149,37 @@ export default function MemoCanvas({ boardId }: Props) {
             backgroundColor: memo.backgroundColor,
             borderWidth: memo.borderWidth,
             borderColor: memo.borderColor || undefined,
-            overflow: 'hidden', // 스크롤 방지
+            overflow: 'hidden',
             zIndex: zIndexes[memo.id] || 1,
-            transition: 'all 0.1s ease-out',
+            transition: 'box-shadow 0.2s, transform 0.1s', 
           }}
           onClick={(e) => handleMemoClick(memo.id, e)}
         >
           <ContentEditable
             html={memo.content}
             onChange={e => handleChange(memo.id, e.target.value)}
-            className="w-full h-full p-2 focus:outline-none"
+            className="w-full h-full p-3 focus:outline-none"
             style={{
               fontSize: memo.fontSize,
               fontWeight: memo.fontWeight,
               fontFamily: memo.fontFamily,
               color: memo.fontColor,
-              overflow: 'hidden', // 내부 스크롤 방지
+              overflow: 'hidden',
             }}
           />
+
+          {/* 설정이 ON이고 메모가 선택되었을 때만 좌표 인디케이터 표시 */}
+          {settings.showCoordinates && selectedId === memo.id && (
+            <div className="absolute bottom-1 right-1 z-50 flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/70 text-[10px] font-mono text-white pointer-events-none select-none backdrop-blur-sm">
+              <span>X:{memo.x} Y:{memo.y}</span>
+              <span className="opacity-50">|</span>
+              <span>{memo.width}×{memo.height}</span>
+            </div>
+          )}
         </div>
       ))}
 
-      {/* 2. 겹친 영역 표시 (가늘게 수정됨) */}
-      {overlapRects.map(rect => (
+      {settings.showOverlapWarning && overlapRects.map(rect => (
         <div
           key={rect.key}
           className="absolute border border-dashed border-red-500 pointer-events-none"
@@ -193,8 +188,8 @@ export default function MemoCanvas({ boardId }: Props) {
             top: rect.y,
             width: rect.width,
             height: rect.height,
-            zIndex: 9999, // 최상단
-            backgroundColor: 'rgba(239, 68, 68, 0.05)', // 배경 강조색도 더 옅게 조정
+            zIndex: 9999,
+            backgroundColor: 'rgba(239, 68, 68, 0.05)',
           }}
         />
       ))}

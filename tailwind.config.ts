@@ -7,7 +7,11 @@ const config: Config = {
     './components/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
-    extend: {},
+    extend: {
+      zIndex: {
+        '100': '100', // z-100 클래스 사용 가능
+      },
+    },
   },
   plugins: [],
 };
