@@ -1,7 +1,14 @@
-"use client";
+'use client';
 
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { 
+  ChevronLeft, 
+  ChevronRight, 
+  FolderOpen, 
+  Plus,
+  Layout
+} from "lucide-react";
 
 type MemoBoard = {
   id: number;
@@ -18,8 +25,7 @@ export default function MemoBoardList({
   onSelect: (id: number) => void;
 }) {
   const [boards, setBoards] = useState<MemoBoard[]>([]);
-  const [isOpen, setIsOpen] = useState(true); // 기본 닫힘
-  const [contentVisible, setContentVisible] = useState(false); // 내용 렌더링 제어
+  const [isOpen, setIsOpen] = useState(true);
 
   useEffect(() => {
     fetch("/api/memoboards")
@@ -32,74 +38,142 @@ export default function MemoBoardList({
   }, []);
 
   const toggleSidebar = () => {
-    if (isOpen) {
-      // 닫을 때: 내용 먼저 제거
-      setContentVisible(false);
-      // 조금 지연 후 폭 줄이기
-      setTimeout(() => setIsOpen(false), 10);
-    } else {
-      // 열 때: 폭 먼저 늘리기
-      setIsOpen(true);
-    }
+    setIsOpen(!isOpen);
   };
 
   return (
     <motion.aside
-      animate={{ width: isOpen ? 240 : 48 }}
-      transition={{ type: "tween", duration: 0.3 }}
-      className="relative flex flex-col shadow-md text-black"
+      animate={{ width: isOpen ? 260 : 64 }}
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      className="relative flex flex-col bg-white dark:bg-zinc-950 border-r border-gray-100 dark:border-zinc-800 shadow-xl overflow-hidden transition-colors duration-300"
     >
-      {/* 토글 버튼 */}
-      <button
-        onClick={toggleSidebar}
-        className="absolute top-2 right-2 w-8 h-8 rounded-full text-black bg-gray-200 flex items-center justify-center text-sm shadow-sm hover:bg-gray-300 focus:outline-none"
-      >
-        {isOpen ? "◀" : "▶"}
-      </button>
-
-      {/* 내용 영역: 폭 완전히 열렸을 때만 렌더링 */}
-      {isOpen && contentVisible && (
-        <div className="flex-1 overflow-y-auto p-4 mt-10">
-          {/* 사용자 이름 제목 */}
-          <h3 className="mb-3 font-bold dark:text-white">
-            📁 {boards[0]?.user?.name || "익명"}의 보드
-          </h3>
-
-          {/* 보드 목록 */}
-          {boards.map(board => (
-            <div
-              key={board.id}
-              onClick={() => onSelect(board.id)}
-              className={`mb-2 cursor-pointer rounded p-2 ${
-                selectedBoardId === board.id ? "border-2 border-black" : ""
-              }`}
-              style={{ background: board.background }} // 메모지 색상 유지
+      {/* 상단 헤더 & 토글 버튼 */}
+      <div className="flex items-center h-16 px-4 shrink-0 relative">
+        <AnimatePresence mode="wait">
+          {isOpen && (
+            <motion.div
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              className="flex items-center gap-2 flex-1 overflow-hidden"
             >
-              {board.title}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* 열린 상태에서만 border-r */}
-      {isOpen && (
-        <div className="absolute top-0 right-0 h-full border-r  pointer-events-none" />
-      )}
-
-      {/* 사이드바 열릴 때 내용 fade-in */}
-      {isOpen && !contentVisible && (
-        <div
-          className="absolute top-0 left-0 w-full h-full"
-          style={{ pointerEvents: "none" }}
+              <div className="p-1.5 bg-yellow-400 rounded-lg shadow-sm shrink-0">
+                <Layout className="w-4 h-4 text-yellow-900" />
+              </div>
+              <span className="font-black text-sm italic dark:text-white whitespace-nowrap text-ellipsis overflow-hidden">
+                My Boards
+              </span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        
+        <button
+          onClick={toggleSidebar}
+          className={`w-8 h-8 rounded-xl text-zinc-500 bg-gray-50 dark:bg-zinc-900 flex items-center justify-center hover:bg-yellow-400 hover:text-yellow-900 transition-all active:scale-90 shadow-sm shrink-0 ${!isOpen ? 'mx-auto' : ''}`}
         >
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.2 }}
-            onAnimationComplete={() => setContentVisible(true)}
-          />
+          {isOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
+        </button>
+      </div>
+
+      {/* 내용 영역 */}
+      <div 
+        className="flex-1 overflow-y-auto px-3 py-2 overflow-x-hidden"
+        style={{
+          msOverflowStyle: 'none',
+          scrollbarWidth: 'none',
+        }}
+      >
+        <style jsx>{`
+          div::-webkit-scrollbar {
+            display: none;
+          }
+        `}</style>
+
+        <div className="space-y-6">
+          <div>
+            <div className={`flex items-center gap-2 px-3 mb-4 transition-all duration-200 ${isOpen ? 'opacity-100' : 'opacity-0 translate-x-[-10px] pointer-events-none'}`}>
+              <FolderOpen size={12} className="text-zinc-400 shrink-0" />
+              <span className="text-xs font-black text-zinc-400 uppercase tracking-widest whitespace-nowrap">
+                {boards[0]?.user?.name || "사용자"}&apos;s Workspace
+              </span>
+            </div>
+
+            <div className="space-y-1.5">
+              {boards.map(board => {
+                const isSelected = selectedBoardId === board.id;
+                
+                return (
+                  <motion.div
+                    key={board.id}
+                    whileHover={{ x: isOpen ? 4 : 0 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => onSelect(board.id)}
+                    className={`group relative flex items-center transition-all ${
+                      isOpen ? "gap-3 p-3.5 rounded-2xl" : "justify-center p-0 h-12 w-12 mx-auto rounded-xl"
+                    } ${
+                      isSelected 
+                        ? "bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200/50 dark:border-yellow-700/30" 
+                        : "hover:bg-gray-50 dark:hover:bg-zinc-900 border border-transparent"
+                    }`}
+                  >
+                    <div 
+                      className={`rounded-full shadow-inner ring-2 ring-white dark:ring-zinc-900 shrink-0 ${isOpen ? 'w-2.5 h-2.5' : 'w-3 h-3'}`}
+                      style={{ backgroundColor: board.background }}
+                    />
+                    
+                    <div className={`${isOpen ? 'flex-1' : 'hidden'} overflow-hidden`}>
+                      <AnimatePresence mode="wait">
+                        {isOpen && (
+                          <motion.span 
+                            initial={{ opacity: 0, x: -5 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -5 }}
+                            className={`text-sm font-bold block truncate whitespace-nowrap ${
+                              isSelected 
+                                ? "text-yellow-700 dark:text-yellow-400" 
+                                : "text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-200"
+                            }`}
+                          >
+                            {board.title}
+                          </motion.span>
+                        )}
+                      </AnimatePresence>
+                    </div>
+
+                    {isSelected && isOpen && (
+                      <motion.div 
+                        layoutId="active-bar"
+                        className="absolute left-0 w-1.5 h-6 bg-yellow-400 rounded-r-full shadow-[0_0_10px_rgba(250,204,21,0.5)]"
+                      />
+                    )}
+                  </motion.div>
+                );
+              })}
+
+              {/* 💡 수정된 새 보드 추가 버튼 */}
+              <button 
+                className={`flex items-center mt-4 border-2 border-dashed border-gray-100 dark:border-zinc-800 text-zinc-400 hover:border-yellow-400 hover:text-yellow-500 transition-all text-sm font-bold group overflow-hidden shrink-0 ${
+                  isOpen ? "w-full gap-3 p-3.5 rounded-2xl" : "w-12 h-12 mx-auto justify-center rounded-xl"
+                }`}
+                title={!isOpen ? "New Board" : ""}
+              >
+                <div className={`flex items-center justify-center bg-gray-100 dark:bg-zinc-800 rounded-lg group-hover:bg-yellow-100 transition-colors shrink-0 ${isOpen ? 'p-1' : 'w-7 h-7'}`}>
+                  <Plus size={isOpen ? 14 : 18} />
+                </div>
+                {isOpen && (
+                  <motion.span 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="whitespace-nowrap"
+                  >
+                    New Board
+                  </motion.span>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
-      )}
+      </div>
     </motion.aside>
   );
 }

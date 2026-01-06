@@ -116,10 +116,29 @@
 }
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
+
   body {
     @apply bg-background text-foreground;
+  }
+  /* 브라우저 전체 스크롤바 숨기기 */
+  html, body {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none;    /* Firefox */
+  }
+
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar {
+    display: none;            /* Chrome, Safari, Opera */
+  }
+
+  /* 모든 요소에 대해 스크롤바 숨김을 적용하고 싶을 때 */
+  * {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    @apply border-border outline-ring/50;
+  }
+  
+  *::-webkit-scrollbar {
+    display: none;
   }
 }

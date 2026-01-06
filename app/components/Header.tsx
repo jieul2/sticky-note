@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Sun, Moon, Save, Settings, LogOut } from 'lucide-react';
+import { Sun, Moon, Save, Settings, LogOut, StickyNote as NoteIcon } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation'; // 경로 감지를 위해 추가
+import { usePathname } from 'next/navigation';
 import { useSave } from './SaveContext';
 import SettingsModal from './SettingsModal';
+import { motion } from 'framer-motion';
 
 interface UserInfo {
   id: number;
@@ -21,7 +22,6 @@ export default function Header() {
   const pathname = usePathname();
   const { triggerSave, isSaving } = useSave();
 
-  // 현재 경로가 특정 보드 내부(예: /load 또는 /board/1 등)인지 확인
   const isBoardActive = pathname.startsWith('/load'); 
 
   useEffect(() => {
@@ -48,53 +48,78 @@ export default function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 border-b border-gray-200 dark:border-zinc-800 bg-white/80 dark:bg-black/80 backdrop-blur-md h-14 px-4 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-8 h-8 bg-black dark:bg-white rounded-lg flex items-center justify-center text-white dark:text-black font-bold group-hover:scale-105 transition-transform">S</div>
-          <span className="font-bold tracking-tight hidden sm:block text-gray-900 dark:text-white">StickyNote</span>
+      <header className="sticky top-0 z-50 border-b border-gray-100 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-xl h-16 px-6 flex items-center justify-between transition-colors">
+        {/* Logo Section */}
+        <Link href="/" className="flex items-center gap-2.5 group">
+          <motion.div 
+            whileHover={{ rotate: -5, scale: 1.1 }}
+            className="w-9 h-9 bg-yellow-400 rounded-xl flex items-center justify-center shadow-sm shadow-yellow-500/20"
+          >
+            <NoteIcon className="w-5 h-5 text-yellow-900" />
+          </motion.div>
+          <span className="font-black text-xl tracking-tight hidden sm:block italic text-zinc-900 dark:text-white">
+            Sticky <span className="text-yellow-500 not-italic">Note.</span>
+          </span>
         </Link>
 
-        {/* 💡 수정된 부분: 로그인했고 + 메모지(보드)가 활성화된 경로일 때만 노출 */}
+        {/* Board Tools (보드 활성화 시에만 노출) */}
         {!loading && user && isBoardActive && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 bg-gray-100/50 dark:bg-zinc-900/50 p-1 rounded-2xl border border-gray-200/50 dark:border-zinc-800/50">
             <button 
               onClick={() => setIsSettingsOpen(true)} 
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-zinc-800 rounded-xl transition-all active:scale-95 hover:shadow-sm"
             >
               <Settings className="w-4 h-4" />
-              <span>설정</span>
+              <span className="hidden md:inline">설정</span>
             </button>
             <button 
               onClick={triggerSave} 
               disabled={isSaving} 
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+              className={`flex items-center gap-2 px-5 py-2 text-sm font-bold text-white rounded-xl transition-all active:scale-95 shadow-lg ${
+                isSaving ? 'bg-zinc-400' : 'bg-zinc-900 dark:bg-white dark:text-zinc-900 shadow-zinc-500/20'
+              }`}
             >
-              <Save className="w-4 h-4" />
-              <span>{isSaving ? '저장중' : '저장'}</span>
+              <Save className={`w-4 h-4 ${isSaving ? 'animate-spin' : ''}`} />
+              <span>{isSaving ? '저장 중' : '저장하기'}</span>
             </button>
           </div>
         )}
 
-        <div className="flex items-center gap-2">
-          <button onClick={toggleTheme} className="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full transition-colors">
+        {/* Right Section: Theme & Auth */}
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={toggleTheme} 
+            className="w-10 h-10 flex items-center justify-center text-gray-500 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-xl transition-all"
+          >
             <Sun className="w-5 h-5 dark:hidden" />
             <Moon className="w-5 h-5 hidden dark:block" />
           </button>
+
           {!loading && (
             user ? (
-              <div className="flex items-center gap-3 pl-3 border-l border-gray-200 dark:border-zinc-700">
-                <Link href="/mypage" className="flex items-center gap-2 text-sm font-medium hover:text-blue-600 transition-colors">
-                  <div className="w-7 h-7 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center text-xs font-bold">
+              <div className="flex items-center gap-2 pl-3 border-l border-gray-200 dark:border-zinc-800">
+                <Link 
+                  href="/mypage" 
+                  className="flex items-center gap-2 p-1.5 pr-3 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-xl transition-all"
+                >
+                  <div className="w-8 h-8 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 rounded-full flex items-center justify-center text-sm font-black shadow-inner">
                     {user.name.slice(0, 1).toUpperCase()}
                   </div>
-                  <span className="hidden sm:inline text-gray-700 dark:text-gray-200">{user.name}</span>
+                  <span className="hidden sm:inline text-sm font-bold text-gray-700 dark:text-gray-200">{user.name}</span>
                 </Link>
-                <button onClick={logout} className="p-1.5 text-gray-400 hover:text-red-500 transition-colors">
+                <button 
+                  onClick={logout} 
+                  className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all"
+                  title="로그아웃"
+                >
                   <LogOut className="w-4 h-4" />
                 </button>
               </div>
             ) : (
-              <Link href="/login" className="px-4 py-1.5 text-sm font-medium text-white bg-black dark:bg-white dark:text-black rounded-full hover:opacity-80 transition-opacity">
+              <Link 
+                href="/login" 
+                className="px-6 py-2 text-sm font-bold text-white bg-zinc-900 dark:bg-white dark:text-zinc-900 rounded-xl hover:scale-105 transition-all active:scale-95"
+              >
                 로그인
               </Link>
             )

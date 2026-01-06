@@ -8,6 +8,7 @@ type Settings = {
   showOverlapWarning: boolean;
   useGridSnap: boolean;
   showCoordinates: boolean; // 좌표 표시 설정 추가
+  gridSize: number;
 };
 
 type SettingsContextType = {
@@ -23,6 +24,7 @@ const defaultSettings: Settings = {
   showOverlapWarning: true,
   useGridSnap: false,
   showCoordinates: true, // 기본값 ON
+  gridSize: 20,
 };
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {

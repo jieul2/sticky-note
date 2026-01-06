@@ -4,6 +4,8 @@ import { useEffect, useState, useRef } from 'react';
 import ContentEditable from 'react-contenteditable';
 import { useSave } from './SaveContext';
 import { useSettings } from './SettingsContext';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Sparkles, Move } from 'lucide-react';
 
 type Memo = {
   id: number;
@@ -22,6 +24,14 @@ type Memo = {
   overflow: string;
 };
 
+interface OverlapRect {
+  key: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 type Props = { boardId: number | null };
 
 export default function MemoCanvas({ boardId }: Props) {
@@ -33,6 +43,8 @@ export default function MemoCanvas({ boardId }: Props) {
   const { registerSaveHandler, triggerSave } = useSave();
   const { settings } = useSettings();
   const memosRef = useRef<Memo[]>([]);
+
+  const GRID_SIZE = settings.gridSize || 20;
 
   useEffect(() => {
     memosRef.current = memos;
@@ -49,38 +61,28 @@ export default function MemoCanvas({ boardId }: Props) {
       .catch(err => console.error('메모 불러오기 실패:', err));
   }, [boardId]);
 
-  // 키보드 이벤트 핸들러 강화
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // 1. 보드 자체가 없으면 즉시 리턴
       if (!boardId) return;
 
       const isCtrlOrMeta = e.ctrlKey || e.metaKey;
       const key = e.key.toLowerCase();
 
-      // 2. Ctrl + S 저장 로직 (최우선순위)
       if (isCtrlOrMeta && key === 's') {
-        // 특정 메모(글쓰는 칸)가 선택되어 있거나, 보드 내부를 클릭한 상태라면 저장 실행
         e.preventDefault();
-        e.stopPropagation(); // 이벤트가 밖으로 새나가지 않게 막음
-        
-        console.log("저장 시도... 현재 선택된 메모 ID:", selectedId);
+        e.stopPropagation();
         triggerSave();
         return;
       }
 
-      // 3. Ctrl + A 전체선택 방지
       if (isCtrlOrMeta && key === 'a') {
-        if (!selectedId) {
-          e.preventDefault();
-        }
+        if (!selectedId) e.preventDefault();
         return;
       }
 
-      // 4. 메모 조작 (이동/크기)
       if (!selectedId) return;
 
-      const MOVE_STEP = settings.useGridSnap ? 20 : 1; 
+      const MOVE_STEP = settings.useGridSnap ? GRID_SIZE : 5;
       const RESIZE_STEP = 10;
 
       setMemos(prev => {
@@ -98,9 +100,9 @@ export default function MemoCanvas({ boardId }: Props) {
 
           if (settings.isResizeEnabled && e.altKey && e.key.startsWith('Arrow')) {
             e.preventDefault();
-            if (e.key === 'ArrowLeft') width = Math.max(50, width - RESIZE_STEP);
+            if (e.key === 'ArrowLeft') width = Math.max(100, width - RESIZE_STEP);
             if (e.key === 'ArrowRight') width = width + RESIZE_STEP;
-            if (e.key === 'ArrowUp') height = Math.max(50, height - RESIZE_STEP);
+            if (e.key === 'ArrowUp') height = Math.max(80, height - RESIZE_STEP);
             if (e.key === 'ArrowDown') height = height + RESIZE_STEP;
           }
           return { ...m, x, y, width, height };
@@ -108,10 +110,9 @@ export default function MemoCanvas({ boardId }: Props) {
       });
     };
 
-    // 'true' (캡처링)를 사용해 브라우저 기본 단축키보다 먼저 가로챕니다.
     window.addEventListener('keydown', handleKeyDown, true);
     return () => window.removeEventListener('keydown', handleKeyDown, true);
-  }, [boardId, selectedId, settings, triggerSave]);
+  }, [boardId, selectedId, settings, triggerSave, GRID_SIZE]);
 
   useEffect(() => {
     if (!boardId) return;
@@ -125,69 +126,135 @@ export default function MemoCanvas({ boardId }: Props) {
     });
   }, [boardId, registerSaveHandler]);
 
-  if (!boardId) {
-    return (
-      <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-zinc-900 text-gray-500 font-medium">
-        메모지를 선택하세요
-      </div>
-    );
-  }
-
-  const overlapRects = [];
-  for (let i = 0; i < memos.length; i++) {
-    for (let j = i + 1; j < memos.length; j++) {
-      const m1 = memos[i];
-      const m2 = memos[j];
-      const x1 = Math.max(m1.x, m2.x);
-      const y1 = Math.max(m1.y, m2.y);
-      const x2 = Math.min(m1.x + m1.width, m2.x + m2.width);
-      const y2 = Math.min(m1.y + m1.height, m2.y + m2.height);
-      if (x1 < x2 && y1 < y2) {
-        overlapRects.push({ key: `${m1.id}-${m2.id}`, x: x1, y: y1, width: x2 - x1, height: y2 - y1 });
+  const overlapRects: OverlapRect[] = [];
+  if (settings.showOverlapWarning) {
+    for (let i = 0; i < memos.length; i++) {
+      for (let j = i + 1; j < memos.length; j++) {
+        const m1 = memos[i];
+        const m2 = memos[j];
+        const x1 = Math.max(m1.x, m2.x);
+        const y1 = Math.max(m1.y, m2.y);
+        const x2 = Math.min(m1.x + m1.width, m2.x + m2.width);
+        const y2 = Math.min(m1.y + m1.height, m2.y + m2.height);
+        if (x1 < x2 && y1 < y2) {
+          overlapRects.push({ key: `${m1.id}-${m2.id}`, x: x1, y: y1, width: x2 - x1, height: y2 - y1 });
+        }
       }
     }
   }
 
+  if (!boardId) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center bg-[#fafafa] dark:bg-zinc-950 text-zinc-400 font-medium relative">
+         <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:32px_32px] opacity-50" />
+         <p className="z-10 italic font-black">캔버스를 선택하여 아이디어를 펼쳐보세요</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="relative flex-1 p-6 overflow-hidden bg-gray-50 dark:bg-zinc-900" onClick={() => setSelectedId(null)}>
-      {memos.map(memo => (
+    <div 
+      className="relative flex-1 p-6 overflow-hidden bg-[#fafafa] dark:bg-zinc-950" 
+      onClick={() => setSelectedId(null)}
+    >
+      <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] dark:bg-[radial-gradient(#27272a_1px,transparent_1px)] [background-size:32px_32px]" />
+
+      <AnimatePresence>
+        {memos.map(memo => {
+          const isSelected = selectedId === memo.id;
+          const isOverlapping = overlapRects.some(rect => rect.key.includes(String(memo.id)));
+
+          return (
+            <motion.div
+              key={memo.id}
+              initial={false}
+              animate={{ 
+                x: memo.x,
+                y: memo.y,
+                width: memo.width,
+                height: memo.height,
+              }}
+              // 💡 transition 설정 변경: 이동속도를 0으로 만들어 즉시 이동 구현
+              transition={{
+                x: { duration: 0 }, 
+                y: { duration: 0 },
+                width: { type: "spring", stiffness: 300, damping: 30 },
+                height: { type: "spring", stiffness: 300, damping: 30 },
+                scale: { duration: 0.2 }
+              }}
+              className={`absolute rounded-2xl shadow-sm border ${
+                isSelected 
+                  ? 'ring-4 ring-yellow-400/30 border-yellow-400 shadow-2xl z-[999]' 
+                  : 'border-white dark:border-zinc-800'
+              } ${isOverlapping ? 'border-red-500 border-dashed' : ''}`}
+              style={{
+                backgroundColor: memo.backgroundColor,
+                zIndex: isSelected ? 999 : (zIndexes[memo.id] || 1),
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                // 위치와 상관없는 속성만 CSS transition 적용
+                transition: 'box-shadow 0.2s, border-color 0.2s, background-color 0.2s', 
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedId(memo.id);
+                setZIndexes(prev => ({ ...prev, [memo.id]: maxZIndex + 1 }));
+                setMaxZIndex(prev => prev + 1);
+              }}
+            >
+              {isSelected && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: -20 }}
+                  className="absolute -top-4 -right-2 bg-yellow-400 p-1.5 rounded-lg shadow-lg"
+                >
+                  <Sparkles className="w-3 h-3 text-yellow-900" />
+                </motion.div>
+              )}
+
+              {settings.showCoordinates && isSelected && (
+                <div className="absolute -bottom-8 left-0 right-0 flex justify-between pointer-events-none px-1">
+                  <span className="bg-zinc-900/80 dark:bg-white/90 backdrop-blur-md text-white dark:text-zinc-900 text-[9px] font-black px-2 py-1 rounded-lg uppercase italic tracking-tighter">
+                    pos {Math.round(memo.x)}, {Math.round(memo.y)}
+                  </span>
+                  <span className="bg-yellow-400 text-yellow-900 text-[9px] font-black px-2 py-1 rounded-lg uppercase italic tracking-tighter shadow-sm">
+                    size {Math.round(memo.width)}×{Math.round(memo.height)}
+                  </span>
+                </div>
+              )}
+
+              <div className="w-full h-full relative p-1">
+                <ContentEditable
+                  html={memo.content}
+                  onChange={e => setMemos(prev => prev.map(m => (m.id === memo.id ? { ...m, content: e.target.value } : m)))}
+                  className="w-full h-full p-4 focus:outline-none overflow-hidden cursor-text"
+                  style={{
+                    fontSize: memo.fontSize,
+                    fontWeight: memo.fontWeight,
+                    fontFamily: memo.fontFamily,
+                    color: memo.fontColor,
+                    lineHeight: '1.5',
+                  }}
+                />
+              </div>
+            </motion.div>
+          );
+        })}
+      </AnimatePresence>
+
+      {settings.showOverlapWarning && overlapRects.map(rect => (
         <div
-          key={memo.id}
-          className={`absolute rounded-none shadow-sm border bg-white dark:bg-zinc-800 transition-shadow ${
-            selectedId === memo.id ? 'ring-2 ring-blue-500 border-transparent shadow-lg' : 'border-gray-200 dark:border-zinc-700'
-          }`}
+          key={rect.key}
+          className="absolute bg-red-500/20 border border-red-500/40 pointer-events-none z-[9998] rounded-lg animate-pulse"
           style={{
-            left: memo.x,
-            top: memo.y,
-            width: memo.width,
-            height: memo.height,
-            backgroundColor: memo.backgroundColor,
-            borderWidth: memo.borderWidth,
-            borderColor: memo.borderColor || undefined,
-            overflow: 'hidden',
-            zIndex: zIndexes[memo.id] || 1,
-            transition: 'box-shadow 0.2s, transform 0.1s', 
+            left: rect.x,
+            top: rect.y,
+            width: rect.width,
+            height: rect.height,
+            backdropFilter: 'blur(2px)',
           }}
-          onClick={(e) => {
-            e.stopPropagation();
-            setSelectedId(memo.id);
-            setZIndexes(prev => ({ ...prev, [memo.id]: maxZIndex + 1 }));
-            setMaxZIndex(prev => prev + 1);
-          }}
-        >
-          <ContentEditable
-            html={memo.content}
-            onChange={e => setMemos(prev => prev.map(m => (m.id === memo.id ? { ...m, content: e.target.value } : m)))}
-            className="w-full h-full p-3 focus:outline-none"
-            style={{
-              fontSize: memo.fontSize,
-              fontWeight: memo.fontWeight,
-              fontFamily: memo.fontFamily,
-              color: memo.fontColor,
-              overflow: 'hidden',
-            }}
-          />
-        </div>
+        />
       ))}
     </div>
   );
