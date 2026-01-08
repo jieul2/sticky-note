@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
 import MemoPropertyModal from './MemoPropertyModal';
 
+// 메모 데이터 타입 정의 (textAlign, verticalAlign 포함)
 type Memo = {
   id: number;
   content: string;
@@ -164,6 +165,7 @@ export default function MemoCanvas({ boardId }: { boardId: number | null }) {
       setMemos(prev =>
         prev.map(m => {
           if (m.id !== selectedId) return m;
+
           let { x, y, width, height } = m;
 
           if (settings.isMoveEnabled && isCtrlOrMeta && e.key.startsWith('Arrow')) {
@@ -283,7 +285,7 @@ export default function MemoCanvas({ boardId }: { boardId: number | null }) {
                 width: { type: 'tween', duration: 0 },
                 height: { type: 'tween', duration: 0 },
               }}
-              className={`absolute rounded-2xl shadow-sm border transition-[box-shadow,border-color,background-color] duration-200 overflow-hidden ${
+              className={`absolute rounded-2xl shadow-sm border transition-[box-shadow,border-color,background-color] duration-200 ${
                 isSelected
                   ? 'ring-4 ring-yellow-400/30 border-yellow-400 shadow-2xl z-[999]'
                   : 'border-white dark:border-zinc-800'
@@ -323,34 +325,47 @@ export default function MemoCanvas({ boardId }: { boardId: number | null }) {
                     e.stopPropagation(); 
                     setPropertyModalMemo(memo); 
                   }}
-                  className="absolute top-2 right-2 bg-yellow-400 p-1.5 rounded-lg shadow-lg z-[1000] cursor-pointer"
+                  className="absolute -top-4 -right-2 bg-yellow-400 p-2 rounded-lg shadow-lg z-[1000] cursor-pointer"
                 >
                   <Sparkles className="w-3 h-3 text-yellow-900" />
                 </motion.button>
               )}
 
-              {/* 💡 핵심 수정 부분: ContentEditable을 Flex 부모로 만들어 전체 영역을 클릭 가능하게 함 */}
-              <ContentEditable
-                html={memo.content}
-                onChange={e =>
-                  setMemos(prev =>
-                    prev.map(m => (m.id === memo.id ? { ...m, content: e.target.value } : m))
-                  )
-                }
-                // 💡 CSS flex를 ContentEditable 태그 자체에 직접 적용
-                className={`w-full h-full p-6 focus:outline-none cursor-text flex flex-col ${
-                  memo.verticalAlign === 'center' ? 'justify-center' : 
-                  memo.verticalAlign === 'bottom' ? 'justify-end' : 'justify-start'
-                } ${memo.overflow === 'auto' ? 'overflow-auto' : 'overflow-hidden'}`}
-                style={{
-                  fontSize: memo.fontSize,
-                  fontWeight: memo.fontWeight,
-                  fontFamily: memo.fontFamily,
-                  color: memo.fontColor,
-                  textAlign: memo.textAlign,
-                  lineHeight: '1.5',
-                }}
-              />
+              {/* 💡 수직 정렬 스타일 및 ContentEditable 영역 확장 */}
+              <div 
+                className={`w-full h-full flex flex-col ${
+                  memo.verticalAlign === 'center' 
+                    ? 'justify-center' 
+                    : memo.verticalAlign === 'bottom' 
+                    ? 'justify-end' 
+                    : 'justify-start'
+                }`}
+              >
+                <ContentEditable
+                  html={memo.content}
+                  onChange={e =>
+                    setMemos(prev =>
+                      prev.map(m => (m.id === memo.id ? { ...m, content: e.target.value } : m))
+                    )
+                  }
+                  // 💡 h-full과 flex-1을 주어 전체 영역을 차지하게 함
+                  className={`w-full h-full p-4 focus:outline-none cursor-text ${
+                    memo.overflow === 'auto' ? 'overflow-auto scrollbar-thin' : 'overflow-hidden'
+                  }`}
+                  style={{
+                    fontSize: memo.fontSize,
+                    fontWeight: memo.fontWeight,
+                    fontFamily: memo.fontFamily,
+                    color: memo.fontColor,
+                    textAlign: memo.textAlign,
+                    lineHeight: '1.5',
+                    // 💡 ContentEditable 내부 div가 최소한 부모 높이만큼 가지도록 설정
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'inherit' // 부모의 verticalAlign 설정을 그대로 따름
+                  }}
+                />
+              </div>
             </motion.div>
           );
         })}
