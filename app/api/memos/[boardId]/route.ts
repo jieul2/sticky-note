@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 
-// 전달받는 메모 데이터의 타입을 정의합니다.
+// 1. 전달받는 메모 데이터 타입에 textAlign, verticalAlign 추가
 interface MemoUpdateInput {
   id: number;
   content: string;
@@ -18,6 +18,8 @@ interface MemoUpdateInput {
   borderWidth: number;
   borderColor: string | null;
   overflow: string;
+  textAlign: string;      // 추가
+  verticalAlign: string;  // 추가
 }
 
 /* =========================
@@ -61,7 +63,7 @@ export async function GET(
 }
 
 /* =========================
-   POST : 새 메모 생성 (추가됨)
+   POST : 새 메모 생성
 ========================= */
 export async function POST(
   req: Request,
@@ -77,7 +79,6 @@ export async function POST(
   const { boardId } = await context.params;
   const boardIdNumber = Number(boardId);
 
-  // 🔐 보드 소유권 확인
   const board = await prisma.memoBoard.findFirst({
     where: {
       id: boardIdNumber,
@@ -92,7 +93,7 @@ export async function POST(
   try {
     const data = await req.json();
 
-    // DB에 새 메모 생성
+    // 2. DB에 새 메모 생성 시 정렬 기본값 설정
     const newMemo = await prisma.memo.create({
       data: {
         boardId: boardIdNumber,
@@ -109,6 +110,8 @@ export async function POST(
         borderWidth: data.borderWidth || 1,
         borderColor: data.borderColor || "#e5e7eb",
         overflow: data.overflow || "hidden",
+        textAlign: data.textAlign || "left",       // 추가
+        verticalAlign: data.verticalAlign || "top", // 추가
       },
     });
 
@@ -157,7 +160,7 @@ export async function PUT(
     return NextResponse.json({ message: "Invalid payload" }, { status: 400 });
   }
 
-  // 📝 메모 업데이트 (기존 메모들만 업데이트)
+  // 3. 메모 업데이트 시 정렬 데이터 반영
   await Promise.all(
     memos.map((memo: MemoUpdateInput) =>
       prisma.memo.update({
@@ -179,6 +182,8 @@ export async function PUT(
           borderWidth: memo.borderWidth,
           borderColor: memo.borderColor ?? "#e5e7eb",
           overflow: memo.overflow,
+          textAlign: memo.textAlign,       // 추가
+          verticalAlign: memo.verticalAlign, // 추가
         },
       })
     )

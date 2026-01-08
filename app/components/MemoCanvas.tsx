@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
 import MemoPropertyModal from './MemoPropertyModal';
 
+// 메모 데이터 타입 정의 (textAlign, verticalAlign 포함)
 type Memo = {
   id: number;
   content: string;
@@ -44,17 +45,20 @@ export default function MemoCanvas({ boardId }: { boardId: number | null }) {
 
   const { registerSaveHandler, triggerSave } = useSave();
   const { settings, isSettingsOpen } = useSettings();
+  
+  // 💡 최신 메모 상태를 참조하기 위한 Ref
   const memosRef = useRef<Memo[]>([]);
   const mousePosRef = useRef({ x: 100, y: 100 });
   const containerRef = useRef<HTMLDivElement>(null);
 
   const GRID_SIZE = settings.gridSize || 20;
 
+  // 상태가 바뀔 때마다 Ref 업데이트
   useEffect(() => {
     memosRef.current = memos;
   }, [memos]);
 
-  // 모달 / 설정 열리면 선택 해제
+  // 모달 / 설정 열리면 선택 해제 및 포커스 해제
   useEffect(() => {
     if (propertyModalMemo || isSettingsOpen) {
       setSelectedId(null);
@@ -90,7 +94,7 @@ export default function MemoCanvas({ boardId }: { boardId: number | null }) {
       .catch(err => console.error('메모 불러오기 실패:', err));
   }, [boardId]);
 
-  // 새 메모 생성
+  // 새 메모 생성 (DB 저장 포함)
   const createNewMemo = async () => {
     if (!boardId) return;
 
@@ -114,8 +118,8 @@ export default function MemoCanvas({ boardId }: { boardId: number | null }) {
       borderWidth: 1,
       borderColor: '#e5e7eb',
       overflow: 'hidden',
-      textAlign: 'left' as const,
-      verticalAlign: 'top' as const,
+      textAlign: 'left' as const,     // 기본값 저장
+      verticalAlign: 'top' as const,   // 기본값 저장
     };
 
     try {
@@ -133,7 +137,7 @@ export default function MemoCanvas({ boardId }: { boardId: number | null }) {
     }
   };
 
-  // 키보드 제어
+  // 키보드 제어 및 저장 단축키
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!boardId) return;
@@ -149,7 +153,7 @@ export default function MemoCanvas({ boardId }: { boardId: number | null }) {
       if (isCtrlOrMeta && key === 's') {
         e.preventDefault();
         e.stopPropagation();
-        triggerSave();
+        triggerSave(); // 여기서 등록된 registerSaveHandler가 실행됨
         return;
       }
 
@@ -196,20 +200,20 @@ export default function MemoCanvas({ boardId }: { boardId: number | null }) {
     return () => window.removeEventListener('keydown', handleKeyDown, true);
   }, [boardId, selectedId, settings, triggerSave, GRID_SIZE]);
 
-  // 저장 핸들러 등록
+  // 💡 [핵심] 저장 핸들러 등록 - textAlign 및 verticalAlign이 포함된 전체 상태를 DB에 저장
   useEffect(() => {
     if (!boardId) return;
     registerSaveHandler(async () => {
       const res = await fetch(`/api/memos/${boardId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ memos: memosRef.current }),
+        body: JSON.stringify({ memos: memosRef.current }), // 최신 메모 배열 전체 전송
       });
       if (!res.ok) throw new Error('저장 실패');
     });
   }, [boardId, registerSaveHandler]);
 
-  // 삭제
+  // 메모 삭제 (API 호출 포함)
   const deleteMemo = async (id: number) => {
     try {
       const res = await fetch(`/api/memos/detail/${id}`, { method: 'DELETE' });
@@ -223,6 +227,7 @@ export default function MemoCanvas({ boardId }: { boardId: number | null }) {
     }
   };
 
+  // 개별 속성 업데이트 (정렬 기능 등)
   const updateMemoProperty = (id: number, updates: Partial<Memo>) => {
     setMemos(prev =>
       prev.map(m => (m.id === id ? { ...m, ...updates } : m))
@@ -312,25 +317,16 @@ export default function MemoCanvas({ boardId }: { boardId: number | null }) {
                 setMaxZIndex(prev => prev + 1);
               }}
             >
-              {/* 좌표 및 사이즈 표시 (설정 활성화 시) */}
+              {/* 좌표 및 사이즈 표시 */}
                {isSelected && settings.showCoordinates && (
-
                   <div className="absolute -bottom-8 left-0 right-0 flex justify-between px-1 pointer-events-none z-[1001]">
-
                     <span className="bg-zinc-900/80 text-white text-[11px] px-2.5 py-1.5 rounded-lg">
-
                       pos {Math.round(memo.x)}, {Math.round(memo.y)}
-
                     </span>
-
                     <span className="bg-yellow-400 text-yellow-900 text-[11px] px-2.5 py-1.5 rounded-lg">
-
                       size {Math.round(memo.width)}×{Math.round(memo.height)}
-
                     </span>
-
                   </div>
-
                 )}
 
               {/* 속성 모달 버튼 */}
@@ -348,7 +344,7 @@ export default function MemoCanvas({ boardId }: { boardId: number | null }) {
                 </motion.button>
               )}
 
-              {/* 수직 정렬 기능 복구 (Flexbox 활용) */}
+              {/* 💡 수직 정렬 스타일 적용 - Flexbox 활용 */}
               <div 
                 className={`w-full h-full p-1 flex flex-col ${
                   memo.verticalAlign === 'center' 
@@ -373,7 +369,7 @@ export default function MemoCanvas({ boardId }: { boardId: number | null }) {
                     fontWeight: memo.fontWeight,
                     fontFamily: memo.fontFamily,
                     color: memo.fontColor,
-                    textAlign: memo.textAlign, // 가로 정렬
+                    textAlign: memo.textAlign, // 가로 정렬 적용
                     lineHeight: '1.5',
                   }}
                 />
@@ -383,7 +379,7 @@ export default function MemoCanvas({ boardId }: { boardId: number | null }) {
         })}
       </AnimatePresence>
 
-      {/* 겹침 영역 강조 레이어 (Red Overlay) 복구 */}
+      {/* 겹침 영역 강조 레이어 */}
       {settings.showOverlapWarning && overlapRects.map(rect => (
         <div 
           key={rect.key} 
@@ -398,7 +394,7 @@ export default function MemoCanvas({ boardId }: { boardId: number | null }) {
         />
       ))}
 
-      {/* 속성 조절 모달 */}
+      {/* 속성 조절 모달 연결 */}
       <AnimatePresence>
         {propertyModalMemo && (
           <MemoPropertyModal
