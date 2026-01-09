@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Sun, Moon, Save, Settings, LogOut, StickyNote as NoteIcon } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -13,6 +13,7 @@ interface UserInfo {
   id: number;
   email: string;
   name: string;
+  color: string; // color 필드 추가
 }
 
 export default function Header() {
@@ -25,17 +26,42 @@ export default function Header() {
 
   const isBoardActive = pathname.startsWith('/load'); 
 
+  // 사용자 정보를 가져오는 함수
+  const fetchUser = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/auth/me?t=${new Date().getTime()}`, { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data);
+      } else {
+        setUser(null);
+      }
+    } catch (error) {
+      console.error('사용자 정보 로드 실패:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
+    // 1. 테마 초기 설정
     const stored = localStorage.getItem('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const initial = stored ?? (prefersDark ? 'dark' : 'light');
     document.documentElement.classList.toggle('dark', initial === 'dark');
 
-    fetch('/api/auth/me', { credentials: 'include' })
-      .then(res => res.ok ? res.json() : null)
-      .then((data: UserInfo | null) => setUser(data))
-      .finally(() => setLoading(false));
-  }, []);
+    // 2. 초기 데이터 로드
+    fetchUser();
+
+    // 3. 외부 갱신 이벤트 구독 (설정 저장 시 즉시 반영용)
+    window.addEventListener('user-data-update', fetchUser);
+    window.addEventListener('focus', fetchUser);
+    
+    return () => {
+      window.removeEventListener('user-data-update', fetchUser);
+      window.removeEventListener('focus', fetchUser);
+    };
+  }, [fetchUser]);
 
   const toggleTheme = () => {
     const isDark = document.documentElement.classList.toggle('dark');
@@ -43,6 +69,7 @@ export default function Header() {
   };
 
   const logout = async () => {
+    if (!confirm('로그아웃 하시겠습니까?')) return;
     await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
     location.href = '/';
   };
@@ -50,6 +77,7 @@ export default function Header() {
   return (
     <>
       <header className="shrink-0 border-b border-gray-100 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-xl h-16 px-6 flex items-center justify-between transition-colors">
+        {/* 로고 영역: 기존 노란색 유지 */}
         <Link href="/" className="flex items-center gap-2.5 group">
           <motion.div 
             whileHover={{ rotate: -5, scale: 1.1 }}
@@ -62,6 +90,7 @@ export default function Header() {
           </span>
         </Link>
 
+        {/* 게시판 활성화 시 설정/저장 버튼 */}
         {!loading && user && isBoardActive && (
           <div className="flex items-center gap-2 bg-gray-100/50 dark:bg-zinc-900/50 p-1 rounded-2xl border border-gray-200/50 dark:border-zinc-800/50">
             <button 
@@ -100,7 +129,11 @@ export default function Header() {
                   href="/mypage" 
                   className="flex items-center gap-2 p-1.5 pr-3 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-xl transition-all"
                 >
-                  <div className="w-8 h-8 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 rounded-full flex items-center justify-center text-sm font-black shadow-inner">
+                  {/* 유저 아바타: 사용자가 설정한 고유 컬러 반영 */}
+                  <div 
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-black shadow-inner text-white"
+                    style={{ backgroundColor: user.color || '#facc15' }}
+                  >
                     {user.name.slice(0, 1).toUpperCase()}
                   </div>
                   <span className="hidden sm:inline text-sm font-bold text-gray-700 dark:text-gray-200">{user.name}</span>
