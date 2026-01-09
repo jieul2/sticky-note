@@ -18,14 +18,18 @@ model User {
   memoBoards MemoBoard[]
 }
 
+// prisma/schema.prisma
+
 model MemoBoard {
   id         Int      @id @default(autoincrement())
-  userId     Int
   title      String
-  background String   @default("#ffff88")
-  createdAt  DateTime @default(now())
+  background String
+  index      Int      @default(0) // 순서 관리를 위한 필드
+  userId     Int
   user       User     @relation(fields: [userId], references: [id])
   memos      Memo[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt // 기존 데이터 에러 방지용
 }
 
 model Memo {
