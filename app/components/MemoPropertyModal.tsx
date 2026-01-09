@@ -6,7 +6,8 @@ import {
   X, Maximize, Type, Bold, Palette, Pipette, 
   Square, ScrollText, MousePointer2, Trash2,
   AlignLeft, AlignCenter, AlignRight,
-  AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd 
+  AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd,
+  MapPin 
 } from 'lucide-react';
 import React from 'react';
 import { useSave } from './SaveContext';
@@ -49,24 +50,35 @@ export default function MemoPropertyModal({ memo, onClose, onUpdate, onDelete }:
     { name: '고딕체', value: 'sans-serif' }
   ];
 
-  const handleCloseAndSave = () => {
-    onClose();
-  };
-
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        handleCloseAndSave();
+        onClose();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [onClose]);
+
+  // 숫자를 지웠을 때 0으로 변하는 것을 방지하기 위한 함수
+  const handleNumberChange = (field: keyof Memo, value: string) => {
+    if (value === '') {
+      // TypeScript의 'any' 오류를 피하기 위해 unknown을 거쳐 number로 캐스팅
+      onUpdate({ [field]: '' as unknown as number }); 
+      return;
+    }
+    const num = Number(value);
+    if (!isNaN(num)) {
+      // 좌표(x, y)는 음수일 때 0으로 제한
+      const finalValue = (field === 'x' || field === 'y') && num < 0 ? 0 : num;
+      onUpdate({ [field]: finalValue });
+    }
+  };
 
   return (
     <div 
       className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/40 backdrop-blur-md" 
-      onClick={handleCloseAndSave}
+      // 바깥 클릭 시 닫히지 않도록 onClick={onClose}를 제거함
     >
       <motion.div 
         initial={{ opacity: 0, scale: 0.95, y: 20 }} 
@@ -83,7 +95,7 @@ export default function MemoPropertyModal({ memo, onClose, onUpdate, onDelete }:
           <motion.button 
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
-            onClick={handleCloseAndSave} 
+            onClick={onClose} 
             className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-900 rounded-xl transition-colors"
           >
             <X className="w-5 h-5 text-zinc-400" />
@@ -91,6 +103,36 @@ export default function MemoPropertyModal({ memo, onClose, onUpdate, onDelete }:
         </div>
 
         <div className="space-y-8">
+          {/* 0. 메모 위치 설정 */}
+          <section>
+            <Label icon={<MapPin className="w-3.5 h-3.5" />} text="메모 위치 설정" />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <span className="text-[12px] text-zinc-400 font-bold uppercase ml-1">X 좌표</span>
+                <div className="flex items-center gap-2 bg-gray-50 dark:bg-zinc-900 p-3 rounded-2xl">
+                  <input 
+                    type="number" 
+                    // value가 빈 문자열일 때를 대비해 타입 단언 사용
+                    value={(memo.x as unknown as string) === '' ? '' : Math.round(memo.x)} 
+                    onChange={(e) => handleNumberChange('x', e.target.value)} 
+                    className="bg-transparent w-full text-sm font-black focus:outline-none dark:text-white" 
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <span className="text-[12px] text-zinc-400 font-bold uppercase ml-1">Y 좌표</span>
+                <div className="flex items-center gap-2 bg-gray-50 dark:bg-zinc-900 p-3 rounded-2xl">
+                  <input 
+                    type="number" 
+                    value={(memo.y as unknown as string) === '' ? '' : Math.round(memo.y)} 
+                    onChange={(e) => handleNumberChange('y', e.target.value)} 
+                    className="bg-transparent w-full text-sm font-black focus:outline-none dark:text-white" 
+                  />
+                </div>
+              </div>
+            </div>
+          </section>
+
           {/* 1. 메모 크기 조절 */}
           <section>
             <Label icon={<Maximize className="w-3.5 h-3.5" />} text="메모 크기 조절" />
@@ -100,8 +142,8 @@ export default function MemoPropertyModal({ memo, onClose, onUpdate, onDelete }:
                 <div className="flex items-center gap-2 bg-gray-50 dark:bg-zinc-900 p-3 rounded-2xl">
                   <input 
                     type="number" 
-                    value={memo.width} 
-                    onChange={(e) => onUpdate({ width: Number(e.target.value) })} 
+                    value={(memo.width as unknown as string) === '' ? '' : memo.width} 
+                    onChange={(e) => handleNumberChange('width', e.target.value)} 
                     className="bg-transparent w-full text-sm font-black focus:outline-none dark:text-white" 
                   />
                 </div>
@@ -111,8 +153,8 @@ export default function MemoPropertyModal({ memo, onClose, onUpdate, onDelete }:
                 <div className="flex items-center gap-2 bg-gray-50 dark:bg-zinc-900 p-3 rounded-2xl">
                   <input 
                     type="number" 
-                    value={memo.height} 
-                    onChange={(e) => onUpdate({ height: Number(e.target.value) })} 
+                    value={(memo.height as unknown as string) === '' ? '' : memo.height} 
+                    onChange={(e) => handleNumberChange('height', e.target.value)} 
                     className="bg-transparent w-full text-sm font-black focus:outline-none dark:text-white" 
                   />
                 </div>
@@ -123,92 +165,75 @@ export default function MemoPropertyModal({ memo, onClose, onUpdate, onDelete }:
           {/* 2. 정렬 및 글꼴 설정 */}
           <section>
             <Label icon={<Type className="w-3.5 h-3.5" />} text="정렬 및 글꼴" />
-            <div className="space-y-4">
-              {/* 가로 정렬 (Text Align) */}
-              <div className="space-y-2">
-                <span className="text-[11px] font-black text-zinc-400 uppercase ml-1">가로 정렬</span>
-                <div className="flex gap-1 bg-gray-50 dark:bg-zinc-900 p-1 rounded-2xl">
-                  {[
-                    { id: 'left' as const, icon: <AlignLeft className="w-4 h-4" /> },
-                    { id: 'center' as const, icon: <AlignCenter className="w-4 h-4" /> },
-                    { id: 'right' as const, icon: <AlignRight className="w-4 h-4" /> }
-                  ].map((btn) => {
-                    const isSelected = memo.textAlign === btn.id;
-                    return (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <span className="text-[11px] font-black text-zinc-400 uppercase ml-1">가로 정렬</span>
+                  <div className="flex gap-1 bg-gray-50 dark:bg-zinc-900 p-1 rounded-2xl">
+                    {(['left', 'center', 'right'] as const).map((id) => (
                       <motion.button 
-                        key={btn.id} 
-                        whileHover={{ scale: 1.05 }} 
-                        whileTap={{ scale: 0.95 }} 
-                        onClick={() => onUpdate({ textAlign: btn.id })} 
-                        className={`flex-1 flex justify-center py-2 rounded-xl transition-all duration-200 ${
-                          isSelected 
-                            ? 'bg-white dark:bg-zinc-800 shadow-md text-yellow-500 ring-1 ring-black/5 dark:ring-white/10' 
-                            : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200'
-                        }`}
+                        key={id} 
+                        whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                        onClick={() => onUpdate({ textAlign: id })} 
+                        className={`flex-1 flex justify-center py-2 rounded-xl transition-all ${memo.textAlign === id ? 'bg-white dark:bg-zinc-800 shadow-md text-yellow-500 ring-1 ring-black/5' : 'text-zinc-400'}`}
                       >
-                        {btn.icon}
+                        {id === 'left' ? <AlignLeft className="w-4 h-4" /> : id === 'center' ? <AlignCenter className="w-4 h-4" /> : <AlignRight className="w-4 h-4" />}
                       </motion.button>
-                    );
-                  })}
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <span className="text-[11px] font-black text-zinc-400 uppercase ml-1">세로 정렬</span>
+                  <div className="flex gap-1 bg-gray-50 dark:bg-zinc-900 p-1 rounded-2xl">
+                    {(['top', 'center', 'bottom'] as const).map((id) => (
+                      <motion.button 
+                        key={id} 
+                        whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                        onClick={() => onUpdate({ verticalAlign: id })} 
+                        className={`flex-1 flex justify-center py-2 rounded-xl transition-all ${memo.verticalAlign === id ? 'bg-white dark:bg-zinc-800 shadow-md text-yellow-500 ring-1 ring-black/5' : 'text-zinc-400'}`}
+                      >
+                        {id === 'top' ? <AlignVerticalJustifyStart className="w-4 h-4" /> : id === 'center' ? <AlignVerticalJustifyCenter className="w-4 h-4" /> : <AlignVerticalJustifyEnd className="w-4 h-4" />}
+                      </motion.button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
-              {/* 세로 정렬 (Vertical Align) */}
               <div className="space-y-2">
-                <span className="text-[11px] font-black text-zinc-400 uppercase ml-1">세로 정렬</span>
-                <div className="flex gap-1 bg-gray-50 dark:bg-zinc-900 p-1 rounded-2xl">
-                  {[
-                    { id: 'top' as const, icon: <AlignVerticalJustifyStart className="w-4 h-4" /> },
-                    { id: 'center' as const, icon: <AlignVerticalJustifyCenter className="w-4 h-4" /> },
-                    { id: 'bottom' as const, icon: <AlignVerticalJustifyEnd className="w-4 h-4" /> }
-                  ].map((btn) => {
-                    const isSelected = memo.verticalAlign === btn.id;
-                    return (
-                      <motion.button 
-                        key={btn.id} 
-                        whileHover={{ scale: 1.05 }} 
-                        whileTap={{ scale: 0.95 }} 
-                        onClick={() => onUpdate({ verticalAlign: btn.id })} 
-                        className={`flex-1 flex justify-center py-2 rounded-xl transition-all duration-200 ${
-                          isSelected 
-                            ? 'bg-white dark:bg-zinc-800 shadow-md text-yellow-500 ring-1 ring-black/5 dark:ring-white/10' 
-                            : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200'
-                        }`}
-                      >
-                        {btn.icon}
-                      </motion.button>
-                    );
-                  })}
+                <span className="text-[11px] font-black text-zinc-400 uppercase ml-1">글꼴 크기</span>
+                <div className="flex items-center gap-4 bg-gray-50 dark:bg-zinc-900 p-3 rounded-2xl">
+                  <input 
+                    type="range" min="12" max="100" 
+                    value={memo.fontSize} 
+                    onChange={(e) => onUpdate({ fontSize: Number(e.target.value) })} 
+                    className="flex-1 accent-yellow-400 cursor-pointer" 
+                  />
+                  <div className="flex items-center gap-1 bg-white dark:bg-zinc-800 px-3 py-1 rounded-lg ring-1 ring-black/5">
+                    <input 
+                      type="number"
+                      value={memo.fontSize}
+                      onChange={(e) => onUpdate({ fontSize: Number(e.target.value) })}
+                      className="w-10 bg-transparent text-center text-sm font-black focus:outline-none dark:text-white"
+                    />
+                    <span className="text-[10px] font-bold text-zinc-400">PX</span>
+                  </div>
                 </div>
               </div>
 
-              {/* 글꼴 크기 및 서체 */}
-              <div className="flex items-center gap-4 bg-gray-50 dark:bg-zinc-900 p-3 rounded-2xl">
-                <input 
-                  type="range" 
-                  min="12" 
-                  max="100" 
-                  value={memo.fontSize} 
-                  onChange={(e) => onUpdate({ fontSize: Number(e.target.value) })} 
-                  className="flex-1 accent-yellow-400" 
-                />
-                <span className="text-sm font-black w-12 dark:text-white">{memo.fontSize}px</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2 mt-2">
                 <select 
                   value={memo.fontFamily} 
                   onChange={(e) => onUpdate({ fontFamily: e.target.value })} 
-                  className="bg-gray-50 dark:bg-zinc-900 border-none rounded-xl p-2 text-[12px] font-black dark:text-white focus:ring-1 ring-yellow-400"
+                  className="bg-gray-50 dark:bg-zinc-900 border-none rounded-xl p-2 text-[12px] font-black dark:text-white focus:ring-1 ring-yellow-400 cursor-pointer"
                 >
                   {fontFamilies.map(f => <option key={f.value} value={f.value}>{f.name}</option>)}
                 </select>
                 <div className="flex gap-1">
                   {(['normal', 'bold'] as const).map(weight => (
                     <motion.button 
-                      key={weight} 
-                      whileTap={{ scale: 0.95 }} 
+                      key={weight} whileTap={{ scale: 0.95 }}
                       onClick={() => onUpdate({ fontWeight: weight })} 
-                      className={`flex-1 py-2 rounded-xl text-[12px] font-black border transition-all ${memo.fontWeight === weight ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border-transparent' : 'border-gray-100 dark:border-zinc-800 text-zinc-400'}`}
+                      className={`flex-1 py-2 rounded-xl text-[12px] font-black border transition-all ${memo.fontWeight === weight ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border-transparent' : 'border-gray-100 dark:border-zinc-800 text-zinc-400 hover:bg-gray-100'}`}
                     >
                       {weight === 'bold' ? <Bold className="w-3.5 h-3.5 mx-auto" /> : 'Aa'}
                     </motion.button>
@@ -230,17 +255,14 @@ export default function MemoPropertyModal({ memo, onClose, onUpdate, onDelete }:
                 <div className="flex flex-wrap gap-2 items-center">
                   {bgPresets.map(color => (
                     <motion.button 
-                      key={color} 
-                      whileHover={{ scale: 1.15 }} 
-                      whileTap={{ scale: 0.9 }} 
+                      key={color} whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }}
                       onClick={() => onUpdate({ backgroundColor: color })} 
                       className={`w-7 h-7 rounded-full border-2 transition-all ${memo.backgroundColor === color ? 'border-yellow-400 scale-110 shadow-md' : 'border-transparent opacity-80'}`} 
                       style={{ backgroundColor: color }} 
                     />
                   ))}
                   <input 
-                    type="color" 
-                    value={memo.backgroundColor} 
+                    type="color" value={memo.backgroundColor} 
                     onChange={(e) => onUpdate({ backgroundColor: e.target.value })} 
                     className="w-7 h-7 rounded-full overflow-hidden border-none bg-transparent cursor-pointer" 
                   />
@@ -251,17 +273,14 @@ export default function MemoPropertyModal({ memo, onClose, onUpdate, onDelete }:
                 <div className="flex flex-wrap gap-2 items-center">
                   {textPresets.map(color => (
                     <motion.button 
-                      key={color} 
-                      whileHover={{ scale: 1.15 }} 
-                      whileTap={{ scale: 0.9 }} 
+                      key={color} whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }}
                       onClick={() => onUpdate({ fontColor: color })} 
                       className={`w-6 h-6 rounded-lg border-2 transition-all ${memo.fontColor === color ? 'border-yellow-400 scale-110' : 'border-transparent'}`} 
                       style={{ backgroundColor: color }} 
                     />
                   ))}
                   <input 
-                    type="color" 
-                    value={memo.fontColor} 
+                    type="color" value={memo.fontColor} 
                     onChange={(e) => onUpdate({ fontColor: e.target.value })} 
                     className="w-6 h-6 rounded-lg overflow-hidden border-none bg-transparent cursor-pointer" 
                   />
@@ -276,12 +295,10 @@ export default function MemoPropertyModal({ memo, onClose, onUpdate, onDelete }:
             <div className="space-y-4">
               <div className="flex items-center gap-4 bg-gray-50 dark:bg-zinc-900 p-3 rounded-2xl">
                 <input 
-                  type="range" 
-                  min="0" 
-                  max="10" 
+                  type="range" min="0" max="10" 
                   value={memo.borderWidth} 
                   onChange={(e) => onUpdate({ borderWidth: Number(e.target.value) })} 
-                  className="flex-1 accent-yellow-400" 
+                  className="flex-1 accent-yellow-400 cursor-pointer" 
                 />
                 <span className="text-sm font-black w-10 dark:text-white">{memo.borderWidth}px</span>
               </div>
@@ -302,14 +319,14 @@ export default function MemoPropertyModal({ memo, onClose, onUpdate, onDelete }:
             <Label icon={<ScrollText className="w-3.5 h-3.5" />} text="스크롤 설정" />
             <div className="flex gap-2">
               <motion.button 
-                whileTap={{ scale: 0.95 }} 
+                whileTap={{ scale: 0.95 }}
                 onClick={() => onUpdate({ overflow: 'hidden' })} 
                 className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-[12px] font-black uppercase transition-all ${memo.overflow === 'hidden' ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm' : 'text-zinc-400 hover:bg-gray-50 dark:hover:bg-zinc-900'}`}
               >
                 <MousePointer2 className="w-3.5 h-3.5" /> 영역 고정
               </motion.button>
               <motion.button 
-                whileTap={{ scale: 0.95 }} 
+                whileTap={{ scale: 0.95 }}
                 onClick={() => onUpdate({ overflow: 'auto' })} 
                 className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-[12px] font-black uppercase transition-all ${memo.overflow === 'auto' ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm' : 'text-zinc-400 hover:bg-gray-50 dark:hover:bg-zinc-900'}`}
               >
