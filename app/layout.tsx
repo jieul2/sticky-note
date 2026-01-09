@@ -26,17 +26,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="h-full">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen flex flex-col overflow-hidden bg-white dark:bg-black text-gray-900 dark:text-white`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased h-full flex flex-col overflow-hidden bg-white dark:bg-black text-gray-900 dark:text-white`}
       >
         <SettingsProvider>
           <SaveProvider>
-            {/* 전역 헤더: 높이 h-14 고정 */}
+            {/* 전역 헤더: Header.tsx 내부의 h-16과 일치하도록 관리 */}
             <Header />
             
-            {/* 메인 본문: 헤더를 제외한 나머지 전체 영역(flex-1)을 차지함 */}
-            <main className="flex-1 overflow-auto relative">
+            {/* 메인 본문: flex-1을 통해 헤더 제외 영역을 정확히 점유 */}
+            <main className="flex-1 min-h-0 overflow-hidden relative">
               {children}
             </main>
           </SaveProvider>

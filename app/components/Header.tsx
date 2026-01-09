@@ -5,7 +5,7 @@ import { Sun, Moon, Save, Settings, LogOut, StickyNote as NoteIcon } from 'lucid
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSave } from './SaveContext';
-import { useSettings } from './SettingsContext'; // 추가
+import { useSettings } from './SettingsContext';
 import SettingsModal from './SettingsModal';
 import { motion } from 'framer-motion';
 
@@ -21,7 +21,7 @@ export default function Header() {
   
   const pathname = usePathname();
   const { triggerSave, isSaving } = useSave();
-  const { isSettingsOpen, setIsSettingsOpen } = useSettings(); // 컨텍스트 상태 사용
+  const { isSettingsOpen, setIsSettingsOpen } = useSettings();
 
   const isBoardActive = pathname.startsWith('/load'); 
 
@@ -49,7 +49,7 @@ export default function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 border-b border-gray-100 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-xl h-16 px-6 flex items-center justify-between transition-colors">
+      <header className="shrink-0 border-b border-gray-100 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-xl h-16 px-6 flex items-center justify-between transition-colors">
         <Link href="/" className="flex items-center gap-2.5 group">
           <motion.div 
             whileHover={{ rotate: -5, scale: 1.1 }}
@@ -65,7 +65,7 @@ export default function Header() {
         {!loading && user && isBoardActive && (
           <div className="flex items-center gap-2 bg-gray-100/50 dark:bg-zinc-900/50 p-1 rounded-2xl border border-gray-200/50 dark:border-zinc-800/50">
             <button 
-              onClick={() => setIsSettingsOpen(true)} // 컨텍스트 함수 호출
+              onClick={() => setIsSettingsOpen(true)}
               className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-zinc-800 rounded-xl transition-all active:scale-95 hover:shadow-sm"
             >
               <Settings className="w-4 h-4" />

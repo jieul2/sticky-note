@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
 import MemoPropertyModal from './MemoPropertyModal';
 
-// 메모 데이터 타입 정의 (textAlign, verticalAlign 포함)
+// 메모 데이터 타입 정의
 type Memo = {
   id: number;
   content: string;
@@ -41,8 +41,6 @@ export default function MemoCanvas({ boardId }: { boardId: number | null }) {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [zIndexes, setZIndexes] = useState<Record<number, number>>({});
   const [maxZIndex, setMaxZIndex] = useState(10);
-  
-  // 💡 수정: 모달 상태 관리를 객체가 아닌 ID 기반으로 변경하여 무한 루프 방지
   const [propertyModalMemoId, setPropertyModalMemoId] = useState<number | null>(null);
 
   const { registerSaveHandler, triggerSave } = useSave();
@@ -72,8 +70,8 @@ export default function MemoCanvas({ boardId }: { boardId: number | null }) {
       if (!containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
       mousePosRef.current = {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
+        x: e.clientX - rect.left + containerRef.current.scrollLeft,
+        y: e.clientY - rect.top + containerRef.current.scrollTop,
       };
     };
     window.addEventListener('mousemove', handleMouseMove);
@@ -102,8 +100,8 @@ export default function MemoCanvas({ boardId }: { boardId: number | null }) {
 
     const newMemoData = {
       content: '',
-      x: x - 20,
-      y: y - 20,
+      x: Math.max(0, x - 125),
+      y: Math.max(0, y - 100),
       width: 250,
       height: 200,
       fontSize: 16,
@@ -248,26 +246,31 @@ export default function MemoCanvas({ boardId }: { boardId: number | null }) {
     }
   }
 
-  // 💡 현재 렌더링 시점에 모달에 표시할 메모를 ID로 찾음
   const currentModalMemo = memos.find(m => m.id === propertyModalMemoId) || null;
 
   if (!boardId) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center bg-[#fafafa] dark:bg-zinc-950 text-zinc-400 font-medium relative">
-        <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] dark:bg-[radial-gradient(#27272a_1px,transparent_1px)] [background-size:32px_32px] opacity-50" />
+        <div className="absolute inset-0 bg-[radial-gradient(var(--dot-color)_1px,transparent_1px)] [background-size:32px_32px] opacity-50" />
         <p className="z-10 italic font-black uppercase tracking-tighter text-xl">캔버스를 선택하여 아이디어를 펼쳐보세요</p>
       </div>
     );
   }
 
+  const maxRight = Math.max(...memos.map(m => m.x + m.width), 0);
+  const maxBottom = Math.max(...memos.map(m => m.y + m.height), 0);
+
   return (
     <div
       ref={containerRef}
-      className="relative flex-1 p-6 overflow-hidden bg-[#fafafa] dark:bg-zinc-950"
+      className="relative flex-1 p-20 overflow-auto bg-[#fafafa] dark:bg-zinc-950 scroll-smooth"
+      style={{
+        // 💡 CSS 변수인 --dot-color를 사용하여 모드별 색상 대응
+        backgroundImage: 'radial-gradient(circle, var(--dot-color) 1px, transparent 1px)',
+        backgroundSize: '32px 32px',
+      }}
       onClick={() => setSelectedId(null)}
     >
-      <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] dark:bg-[radial-gradient(#27272a_1px,transparent_1px)] [background-size:32px_32px]" />
-
       <AnimatePresence>
         {memos.map(memo => {
           const isSelected = selectedId === memo.id;
@@ -277,10 +280,10 @@ export default function MemoCanvas({ boardId }: { boardId: number | null }) {
             <motion.div
               key={memo.id}
               initial={false}
-              animate={{ x: memo.x, y: memo.y, width: memo.width, height: memo.height }}
+              animate={{ left: memo.x, top: memo.y, width: memo.width, height: memo.height }}
               transition={{
-                x: { duration: 0 },
-                y: { duration: 0 },
+                left: { duration: 0.1 },
+                top: { duration: 0.1 },
                 width: { type: 'tween', duration: 0 },
                 height: { type: 'tween', duration: 0 },
               }}
@@ -292,9 +295,6 @@ export default function MemoCanvas({ boardId }: { boardId: number | null }) {
               style={{
                 backgroundColor: memo.backgroundColor,
                 zIndex: isSelected ? 999 : (zIndexes[memo.id] || 1),
-                position: 'absolute',
-                left: 0,
-                top: 0,
                 borderWidth: memo.borderWidth,
                 borderColor: memo.borderColor || 'transparent',
               }}
@@ -341,7 +341,7 @@ export default function MemoCanvas({ boardId }: { boardId: number | null }) {
               >
                 <ContentEditable
                   html={memo.content}
-                  spellCheck={false} // 💡 빨간 밑줄(맞춤법 검사) 비활성화 추가
+                  spellCheck={false}
                   onChange={e =>
                     setMemos(prev =>
                       prev.map(m => (m.id === memo.id ? { ...m, content: e.target.value } : m))
@@ -367,6 +367,17 @@ export default function MemoCanvas({ boardId }: { boardId: number | null }) {
           );
         })}
       </AnimatePresence>
+
+      <div 
+        className="pointer-events-none" 
+        style={{ 
+          position: 'absolute', 
+          left: maxRight + 200, 
+          top: maxBottom + 200, 
+          width: 1, 
+          height: 1 
+        }} 
+      />
 
       {settings.showOverlapWarning && overlapRects.map(rect => (
         <div 

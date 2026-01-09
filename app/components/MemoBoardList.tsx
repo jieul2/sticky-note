@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence, Reorder } from "framer-motion";
+import { motion, AnimatePresence, Reorder, useDragControls } from "framer-motion";
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -12,18 +12,30 @@ import {
   GripVertical,
   Trash2,
   Edit2,
-  Palette,
-  Check,
-  X
+  Palette
 } from "lucide-react";
 
-type MemoBoard = {
+// 인터페이스 정의
+interface MemoBoard {
   id: number;
   title: string;
   background: string;
   index: number;
   user?: { name: string | null };
-};
+}
+
+interface BoardItemProps {
+  board: MemoBoard;
+  isOpen: boolean;
+  isSelected: boolean;
+  isEditing: boolean;
+  editTitle: string;
+  setEditTitle: (title: string) => void;
+  onSelect: (id: number) => void;
+  onHandleUpdate: (id: number, data: Partial<MemoBoard>) => Promise<void>;
+  onHandleContextMenu: (e: React.MouseEvent, id: number) => void;
+  onSaveOrder: () => void;
+}
 
 const COLORS = ["#fbbf24", "#f87171", "#60a5fa", "#34d399", "#a78bfa", "#f472b6"];
 
@@ -39,7 +51,6 @@ export default function MemoBoardList({
   const [isSidebarFocused, setIsSidebarFocused] = useState(false);
   const router = useRouter();
 
-  // 메뉴 위치 정보를 담는 상태에 방향(direction) 정보 추가
   const [menuConfig, setMenuConfig] = useState<{ id: number, x: number, y: number, direction: 'down' | 'up' } | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState("");
@@ -113,17 +124,12 @@ export default function MemoBoardList({
     return () => window.removeEventListener("click", handleClick);
   }, []);
 
-  // 우클릭 시 화면 하단 공간을 계산하여 메뉴 방향 결정
   const handleContextMenu = (e: React.MouseEvent, id: number) => {
     e.preventDefault();
-    
-    const menuHeight = 280; // 예상되는 메뉴의 최대 높이 (단위: px)
+    const menuHeight = 280;
     const windowHeight = window.innerHeight;
     const clickY = e.clientY;
-
-    // 하단에 메뉴 높이만큼의 여유 공간이 없으면 위쪽('up')으로 띄움
     const direction = (windowHeight - clickY) < menuHeight ? 'up' : 'down';
-
     setMenuConfig({ id, x: e.clientX, y: e.clientY, direction });
   };
 
@@ -180,16 +186,19 @@ export default function MemoBoardList({
     }
   };
 
-  const handleReorder = async (newOrder: MemoBoard[]) => {
+  const handleReorder = (newOrder: MemoBoard[]) => {
     setBoards(newOrder);
+  };
+
+  const saveOrderToServer = async () => {
     try {
       await fetch("/api/memoboards/reorder", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ boardIds: newOrder.map(b => b.id) }),
+        body: JSON.stringify({ boardIds: boards.map(b => b.id) }),
       });
     } catch (err) {
-      console.error(err);
+      console.error("Order Save Error:", err);
     }
   };
 
@@ -198,9 +207,12 @@ export default function MemoBoardList({
       ref={asideRef}
       animate={{ width: isOpen ? 260 : 64 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      className={`relative flex flex-col bg-white dark:bg-zinc-950 border-r border-gray-100 dark:border-zinc-800 shadow-xl z-40 transition-colors duration-300 ${isSidebarFocused ? 'ring-1 ring-inset ring-yellow-400/30' : ''}`}
+      // 💡 onContextMenu={(e) => e.preventDefault()} 추가: 사이드바 전체 우클릭 방지
+      // 💡 select-none 추가: 사이드바 내부 텍스트 드래그 방지
+      onContextMenu={(e) => e.preventDefault()}
+      className={`relative flex flex-col bg-white dark:bg-zinc-950 border-r border-gray-100 dark:border-zinc-800 shadow-xl z-50 transition-colors duration-300 select-none ${isSidebarFocused ? 'ring-1 ring-inset ring-yellow-400/30' : ''}`}
     >
-      <div className="flex items-center h-16 px-4 shrink-0 relative z-10">
+      <div className="flex items-center h-16 px-4 shrink-0 relative z-10 bg-inherit">
         <AnimatePresence mode="wait">
           {isOpen && (
             <motion.div
@@ -227,7 +239,7 @@ export default function MemoBoardList({
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-3 py-2 scrollbar-hide">
+      <div className="flex-1 overflow-y-auto px-3 py-2 scrollbar-hide bg-inherit">
         <style jsx>{`.scrollbar-hide::-webkit-scrollbar { display: none; }`}</style>
 
         <div className="space-y-6">
@@ -240,68 +252,21 @@ export default function MemoBoardList({
             </div>
 
             <Reorder.Group axis="y" values={boards} onReorder={handleReorder} className="space-y-1.5">
-              {boards.map(board => {
-                const isSelected = selectedBoardId === board.id;
-                const isEditing = editingId === board.id;
-                
-                return (
-                  <Reorder.Item key={board.id} value={board} className="relative list-none outline-none">
-                    <motion.div
-                      whileHover={{ x: isOpen ? 4 : 0 }}
-                      onClick={() => !isEditing && onSelect(board.id)}
-                      onContextMenu={(e) => handleContextMenu(e, board.id)}
-                      className={`group relative flex items-center transition-all cursor-pointer ${
-                        isOpen ? "gap-3 p-3.5 rounded-2xl" : "justify-center p-0 h-12 w-12 mx-auto rounded-xl"
-                      } ${
-                        isSelected 
-                          ? "bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200/50 dark:border-yellow-700/30" 
-                          : "hover:bg-gray-50 dark:hover:bg-zinc-900 border border-transparent"
-                      }`}
-                    >
-                      {isOpen && (
-                        <GripVertical size={14} className="text-zinc-300 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab shrink-0" />
-                      )}
-
-                      <div 
-                        className={`rounded-full shadow-inner ring-2 ring-white dark:ring-zinc-900 shrink-0 ${isOpen ? 'w-2.5 h-2.5' : 'w-3 h-3'}`}
-                        style={{ backgroundColor: board.background }}
-                      />
-                      
-                      {isOpen && (
-                        <div className="flex-1 overflow-hidden">
-                          {isEditing ? (
-                            <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                              <input 
-                                autoFocus
-                                className="w-full bg-transparent border-none outline-none text-sm font-bold p-0 text-zinc-900 dark:text-white"
-                                value={editTitle}
-                                onChange={e => setEditTitle(e.target.value)}
-                                onKeyDown={e => e.key === 'Enter' && handleUpdate(board.id, { title: editTitle })}
-                                onBlur={() => handleUpdate(board.id, { title: editTitle })}
-                              />
-                            </div>
-                          ) : (
-                            <span className={`text-sm font-bold block truncate transition-all duration-300 ${
-                              isSelected 
-                                ? "text-yellow-700 dark:text-yellow-400" 
-                                : "text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-200"
-                            }`}>
-                              {board.title}
-                            </span>
-                          )}
-                        </div>
-                      )}
-
-                      {isSelected && isOpen && !isEditing && (
-                        <motion.div 
-                          layoutId="active-bar"
-                          className="absolute left-0 w-1.5 h-6 bg-yellow-400 rounded-r-full shadow-[0_0_10px_rgba(250,204,21,0.5)]"
-                        />
-                      )}
-                    </motion.div>
-                  </Reorder.Item>
-                );
-              })}
+              {boards.map(board => (
+                <BoardItem 
+                  key={board.id} 
+                  board={board} 
+                  isOpen={isOpen} 
+                  isSelected={selectedBoardId === board.id}
+                  isEditing={editingId === board.id}
+                  editTitle={editTitle}
+                  setEditTitle={setEditTitle}
+                  onSelect={onSelect}
+                  onHandleUpdate={handleUpdate}
+                  onHandleContextMenu={handleContextMenu}
+                  onSaveOrder={saveOrderToServer}
+                />
+              ))}
             </Reorder.Group>
 
             <button 
@@ -326,13 +291,14 @@ export default function MemoBoardList({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             style={{ 
-              // direction이 'up'이면 클릭 위치에서 자신의 높이만큼 위로 이동
               top: menuConfig.direction === 'down' ? menuConfig.y : 'auto',
               bottom: menuConfig.direction === 'up' ? (window.innerHeight - menuConfig.y) : 'auto',
               left: menuConfig.x,
               position: 'fixed',
               zIndex: 9999 
             }}
+            // 💡 메뉴 영역에서도 우클릭 방지
+            onContextMenu={(e) => e.preventDefault()}
             className="w-56 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.2)] p-2"
             onClick={e => e.stopPropagation()}
           >
@@ -376,5 +342,91 @@ export default function MemoBoardList({
         )}
       </AnimatePresence>
     </motion.aside>
+  );
+}
+
+function BoardItem({ 
+  board, 
+  isOpen, 
+  isSelected, 
+  isEditing, 
+  editTitle, 
+  setEditTitle, 
+  onSelect, 
+  onHandleUpdate, 
+  onHandleContextMenu,
+  onSaveOrder
+}: BoardItemProps) {
+  const dragControls = useDragControls();
+
+  return (
+    <Reorder.Item 
+      value={board} 
+      dragListener={false}
+      dragControls={dragControls}
+      onDragEnd={onSaveOrder}
+      className="relative list-none outline-none bg-inherit"
+    >
+      <motion.div
+        whileHover={{ x: isOpen ? 4 : 0 }}
+        onClick={() => !isEditing && onSelect(board.id)}
+        // 💡 항목별 우클릭 이벤트는 우리가 만든 메뉴를 띄우도록 설정되어 있음 (onHandleContextMenu 내부에서 e.preventDefault() 처리됨)
+        onContextMenu={(e) => onHandleContextMenu(e, board.id)}
+        className={`group relative flex items-center transition-all cursor-pointer ${
+          isOpen ? "gap-3 p-3.5 rounded-2xl" : "justify-center p-0 h-12 w-12 mx-auto rounded-xl"
+        } ${
+          isSelected 
+            ? "bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200/50 dark:border-yellow-700/30" 
+            : "hover:bg-gray-50 dark:hover:bg-zinc-900 border border-transparent"
+        }`}
+      >
+        {isOpen && (
+          <div 
+            className="p-1 cursor-grab active:cursor-grabbing text-zinc-300 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+            onPointerDown={(e) => dragControls.start(e)}
+          >
+            <GripVertical size={14} />
+          </div>
+        )}
+
+        <div 
+          className={`rounded-full shadow-inner ring-2 ring-white dark:ring-zinc-900 shrink-0 ${isOpen ? 'w-2.5 h-2.5' : 'w-3 h-3'}`}
+          style={{ backgroundColor: board.background }}
+        />
+        
+        {isOpen && (
+          <div className="flex-1 overflow-hidden">
+            {isEditing ? (
+              <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                <input 
+                  autoFocus
+                  // 💡 input 내에서는 텍스트 드래그 및 선택이 가능해야 하므로 select-text 추가
+                  className="w-full bg-transparent border-none outline-none text-sm font-bold p-0 text-zinc-900 dark:text-white select-text"
+                  value={editTitle}
+                  onChange={e => setEditTitle(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && onHandleUpdate(board.id, { title: editTitle })}
+                  onBlur={() => onHandleUpdate(board.id, { title: editTitle })}
+                />
+              </div>
+            ) : (
+              <span className={`text-sm font-bold block truncate transition-all duration-300 ${
+                isSelected 
+                  ? "text-yellow-700 dark:text-yellow-400" 
+                  : "text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-200"
+              }`}>
+                {board.title}
+              </span>
+            )}
+          </div>
+        )}
+
+        {isSelected && isOpen && !isEditing && (
+          <motion.div 
+            layoutId="active-bar"
+            className="absolute left-0 w-1.5 h-6 bg-yellow-400 rounded-r-full shadow-[0_0_10px_rgba(250,204,21,0.5)]"
+          />
+        )}
+      </motion.div>
+    </Reorder.Item>
   );
 }
