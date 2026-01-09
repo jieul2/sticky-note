@@ -29,6 +29,7 @@ interface BoardItemProps {
   isOpen: boolean;
   isSelected: boolean;
   isEditing: boolean;
+  isMenuOpen: boolean; 
   editTitle: string;
   setEditTitle: (title: string) => void;
   onSelect: (id: number) => void;
@@ -37,7 +38,10 @@ interface BoardItemProps {
   onSaveOrder: () => void;
 }
 
-const COLORS = ["#fbbf24", "#f87171", "#60a5fa", "#34d399", "#a78bfa", "#f472b6"];
+const COLORS = [
+  "#f87171", "#fb923c", "#fbbf24", "#34d399", "#2dd4bf", "#60a5fa",
+  "#a78bfa", "#f472b6", "#ffffff", "#e5e7eb", "#71717a", "#18181b"
+];
 
 export default function MemoBoardList({
   selectedBoardId,
@@ -126,7 +130,7 @@ export default function MemoBoardList({
 
   const handleContextMenu = (e: React.MouseEvent, id: number) => {
     e.preventDefault();
-    const menuHeight = 280;
+    const menuHeight = 320;
     const windowHeight = window.innerHeight;
     const clickY = e.clientY;
     const direction = (windowHeight - clickY) < menuHeight ? 'up' : 'down';
@@ -207,8 +211,6 @@ export default function MemoBoardList({
       ref={asideRef}
       animate={{ width: isOpen ? 260 : 64 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      // 💡 onContextMenu={(e) => e.preventDefault()} 추가: 사이드바 전체 우클릭 방지
-      // 💡 select-none 추가: 사이드바 내부 텍스트 드래그 방지
       onContextMenu={(e) => e.preventDefault()}
       className={`relative flex flex-col bg-white dark:bg-zinc-950 border-r border-gray-100 dark:border-zinc-800 shadow-xl z-50 transition-colors duration-300 select-none ${isSidebarFocused ? 'ring-1 ring-inset ring-yellow-400/30' : ''}`}
     >
@@ -259,6 +261,7 @@ export default function MemoBoardList({
                   isOpen={isOpen} 
                   isSelected={selectedBoardId === board.id}
                   isEditing={editingId === board.id}
+                  isMenuOpen={menuConfig?.id === board.id}
                   editTitle={editTitle}
                   setEditTitle={setEditTitle}
                   onSelect={onSelect}
@@ -287,9 +290,13 @@ export default function MemoBoardList({
       <AnimatePresence>
         {menuConfig && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
+            key={menuConfig.id}
+            // 💡 initial에서 y값을 주어 나타날 때만 살짝 움직이게 합니다.
+            initial={{ opacity: 0, scale: 0.9, y: menuConfig.direction === 'down' ? -5 : 5 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            // 💡 exit에서 y값을 0으로 고정하여 사라질 때 위치가 튀는 현상을 방지합니다.
+            exit={{ opacity: 0, scale: 0.9, y: 0 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
             style={{ 
               top: menuConfig.direction === 'down' ? menuConfig.y : 'auto',
               bottom: menuConfig.direction === 'up' ? (window.innerHeight - menuConfig.y) : 'auto',
@@ -297,7 +304,6 @@ export default function MemoBoardList({
               position: 'fixed',
               zIndex: 9999 
             }}
-            // 💡 메뉴 영역에서도 우클릭 방지
             onContextMenu={(e) => e.preventDefault()}
             className="w-56 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.2)] p-2"
             onClick={e => e.stopPropagation()}
@@ -320,12 +326,12 @@ export default function MemoBoardList({
               <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-zinc-400 mb-3 font-black">
                 <Palette size={14} /> 색상 변경
               </div>
-              <div className="flex gap-2.5 flex-wrap">
+              <div className="grid grid-cols-6 gap-2">
                 {COLORS.map(color => (
                   <button
                     key={color}
                     onClick={() => handleUpdate(menuConfig.id, { background: color })}
-                    className="w-6 h-6 rounded-full border-2 border-white dark:border-zinc-800 shadow-sm transition-transform hover:scale-125"
+                    className="w-6 h-6 rounded-full border border-gray-200 dark:border-zinc-700 shadow-sm transition-transform hover:scale-125"
                     style={{ backgroundColor: color }}
                   />
                 ))}
@@ -350,12 +356,13 @@ function BoardItem({
   isOpen, 
   isSelected, 
   isEditing, 
+  isMenuOpen,
   editTitle, 
   setEditTitle, 
   onSelect, 
   onHandleUpdate, 
   onHandleContextMenu,
-  onSaveOrder
+  onSaveOrder 
 }: BoardItemProps) {
   const dragControls = useDragControls();
 
@@ -370,12 +377,13 @@ function BoardItem({
       <motion.div
         whileHover={{ x: isOpen ? 4 : 0 }}
         onClick={() => !isEditing && onSelect(board.id)}
-        // 💡 항목별 우클릭 이벤트는 우리가 만든 메뉴를 띄우도록 설정되어 있음 (onHandleContextMenu 내부에서 e.preventDefault() 처리됨)
         onContextMenu={(e) => onHandleContextMenu(e, board.id)}
         className={`group relative flex items-center transition-all cursor-pointer ${
           isOpen ? "gap-3 p-3.5 rounded-2xl" : "justify-center p-0 h-12 w-12 mx-auto rounded-xl"
         } ${
-          isSelected 
+          isMenuOpen 
+            ? "border-2 border-dashed border-yellow-400 bg-yellow-50/50 dark:bg-yellow-900/10" 
+            : isSelected 
             ? "bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200/50 dark:border-yellow-700/30" 
             : "hover:bg-gray-50 dark:hover:bg-zinc-900 border border-transparent"
         }`}
@@ -400,7 +408,6 @@ function BoardItem({
               <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                 <input 
                   autoFocus
-                  // 💡 input 내에서는 텍스트 드래그 및 선택이 가능해야 하므로 select-text 추가
                   className="w-full bg-transparent border-none outline-none text-sm font-bold p-0 text-zinc-900 dark:text-white select-text"
                   value={editTitle}
                   onChange={e => setEditTitle(e.target.value)}
