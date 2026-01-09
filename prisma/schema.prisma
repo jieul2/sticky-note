@@ -35,7 +35,7 @@ model MemoBoard {
 model Memo {
   id              Int       @id @default(autoincrement())
   boardId         Int
-  content         String
+  content         String    @db.LongText
   x               Int       @default(0)
   y               Int       @default(0)
   width           Int       @default(200)
