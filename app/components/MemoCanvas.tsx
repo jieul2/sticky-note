@@ -41,7 +41,9 @@ export default function MemoCanvas({ boardId }: { boardId: number | null }) {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [zIndexes, setZIndexes] = useState<Record<number, number>>({});
   const [maxZIndex, setMaxZIndex] = useState(10);
-  const [propertyModalMemo, setPropertyModalMemo] = useState<Memo | null>(null);
+  
+  // 💡 수정: 모달 상태 관리를 객체가 아닌 ID 기반으로 변경하여 무한 루프 방지
+  const [propertyModalMemoId, setPropertyModalMemoId] = useState<number | null>(null);
 
   const { registerSaveHandler, triggerSave } = useSave();
   const { settings, isSettingsOpen } = useSettings();
@@ -57,13 +59,13 @@ export default function MemoCanvas({ boardId }: { boardId: number | null }) {
   }, [memos]);
 
   useEffect(() => {
-    if (propertyModalMemo || isSettingsOpen) {
+    if (propertyModalMemoId || isSettingsOpen) {
       setSelectedId(null);
       if (document.activeElement instanceof HTMLElement) {
         document.activeElement.blur();
       }
     }
-  }, [propertyModalMemo, isSettingsOpen]);
+  }, [propertyModalMemoId, isSettingsOpen]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -154,8 +156,7 @@ export default function MemoCanvas({ boardId }: { boardId: number | null }) {
 
       if (isCtrlOrMeta && key === 'e') {
         e.preventDefault();
-        const target = memosRef.current.find(m => m.id === selectedId);
-        if (target) setPropertyModalMemo(target);
+        setPropertyModalMemoId(selectedId);
         return;
       }
 
@@ -211,7 +212,7 @@ export default function MemoCanvas({ boardId }: { boardId: number | null }) {
       if (!res.ok) throw new Error(`삭제 실패: ${res.status}`);
       setMemos(prev => prev.filter(m => m.id !== id));
       setSelectedId(null);
-      setPropertyModalMemo(null);
+      setPropertyModalMemoId(null);
     } catch (err) {
       console.error(err);
       alert('메모 삭제에 실패했습니다.');
@@ -222,11 +223,6 @@ export default function MemoCanvas({ boardId }: { boardId: number | null }) {
     setMemos(prev =>
       prev.map(m => (m.id === id ? { ...m, ...updates } : m))
     );
-    if (propertyModalMemo?.id === id) {
-      setPropertyModalMemo(prev =>
-        prev ? { ...prev, ...updates } : null
-      );
-    }
   };
 
   const overlapRects: OverlapRect[] = [];
@@ -251,6 +247,9 @@ export default function MemoCanvas({ boardId }: { boardId: number | null }) {
       }
     }
   }
+
+  // 💡 현재 렌더링 시점에 모달에 표시할 메모를 ID로 찾음
+  const currentModalMemo = memos.find(m => m.id === propertyModalMemoId) || null;
 
   if (!boardId) {
     return (
@@ -323,7 +322,7 @@ export default function MemoCanvas({ boardId }: { boardId: number | null }) {
                   whileTap={{ scale: 0.9 }}
                   onClick={(e) => { 
                     e.stopPropagation(); 
-                    setPropertyModalMemo(memo); 
+                    setPropertyModalMemoId(memo.id); 
                   }}
                   className="absolute -top-4 -right-2 bg-yellow-400 p-2 rounded-lg shadow-lg z-[1000] cursor-pointer"
                 >
@@ -331,7 +330,6 @@ export default function MemoCanvas({ boardId }: { boardId: number | null }) {
                 </motion.button>
               )}
 
-              {/* 💡 수직 정렬 스타일 및 ContentEditable 영역 확장 */}
               <div 
                 className={`w-full h-full flex flex-col ${
                   memo.verticalAlign === 'center' 
@@ -343,12 +341,12 @@ export default function MemoCanvas({ boardId }: { boardId: number | null }) {
               >
                 <ContentEditable
                   html={memo.content}
+                  spellCheck={false} // 💡 빨간 밑줄(맞춤법 검사) 비활성화 추가
                   onChange={e =>
                     setMemos(prev =>
                       prev.map(m => (m.id === memo.id ? { ...m, content: e.target.value } : m))
                     )
                   }
-                  // 💡 h-full과 flex-1을 주어 전체 영역을 차지하게 함
                   className={`w-full h-full p-4 focus:outline-none cursor-text ${
                     memo.overflow === 'auto' ? 'overflow-auto scrollbar-thin' : 'overflow-hidden'
                   }`}
@@ -359,10 +357,9 @@ export default function MemoCanvas({ boardId }: { boardId: number | null }) {
                     color: memo.fontColor,
                     textAlign: memo.textAlign,
                     lineHeight: '1.5',
-                    // 💡 ContentEditable 내부 div가 최소한 부모 높이만큼 가지도록 설정
                     display: 'flex',
                     flexDirection: 'column',
-                    justifyContent: 'inherit' // 부모의 verticalAlign 설정을 그대로 따름
+                    justifyContent: 'inherit'
                   }}
                 />
               </div>
@@ -386,14 +383,14 @@ export default function MemoCanvas({ boardId }: { boardId: number | null }) {
       ))}
 
       <AnimatePresence>
-        {propertyModalMemo && (
+        {currentModalMemo && (
           <MemoPropertyModal
-            memo={propertyModalMemo}
-            onClose={() => setPropertyModalMemo(null)}
+            memo={currentModalMemo}
+            onClose={() => setPropertyModalMemoId(null)}
             onUpdate={updates =>
-              updateMemoProperty(propertyModalMemo.id, updates)
+              updateMemoProperty(currentModalMemo.id, updates)
             }
-            onDelete={() => deleteMemo(propertyModalMemo.id)}
+            onDelete={() => deleteMemo(currentModalMemo.id)}
           />
         )}
       </AnimatePresence>
