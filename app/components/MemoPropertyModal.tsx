@@ -39,6 +39,7 @@ interface ModalProps {
 }
 
 export default function MemoPropertyModal({ memo, onClose, onUpdate, onDelete }: ModalProps) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { triggerSave } = useSave();
 
   const bgPresets = ['#ffffff', '#fef08a', '#bbf7d0', '#bfdbfe', '#fecaca', '#e9d5ff', '#18181b', '#ffedd5'];
@@ -77,14 +78,14 @@ export default function MemoPropertyModal({ memo, onClose, onUpdate, onDelete }:
 
   return (
     <div 
-      className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/40 backdrop-blur-md" 
+      className="fixed inset-0 z-2000 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md" 
       // 바깥 클릭 시 닫히지 않도록 onClick={onClose}를 제거함
     >
       <motion.div 
         initial={{ opacity: 0, scale: 0.95, y: 20 }} 
         animate={{ opacity: 1, scale: 1, y: 0 }} 
         exit={{ opacity: 0, scale: 0.95, y: 20 }} 
-        className="bg-white dark:bg-zinc-950 rounded-[2.5rem] shadow-2xl p-8 max-w-[90vw] w-[520px] border border-gray-100 dark:border-zinc-800 max-h-[85vh] overflow-y-auto scrollbar-hide" 
+        className="bg-white dark:bg-zinc-950 rounded-[2.5rem] shadow-2xl p-8 max-w-[90vw] w-130 border border-gray-100 dark:border-zinc-800 max-h-[85vh] overflow-y-auto scrollbar-hide" 
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-8">
@@ -351,7 +352,7 @@ export default function MemoPropertyModal({ memo, onClose, onUpdate, onDelete }:
 
 function Label({ icon, text }: { icon: React.ReactNode, text: string }) {
   return (
-    <div className="flex items-center gap-2 mb-4 text-[13px] font-black text-zinc-400 uppercase tracking-[0.1em]">
+    <div className="flex items-center gap-2 mb-4 text-[13px] font-black text-zinc-400 uppercase tracking-widest">
       {icon} <span>{text}</span>
     </div>
   );

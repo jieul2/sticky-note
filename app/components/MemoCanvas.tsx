@@ -190,6 +190,7 @@ export default function MemoCanvas({ boardId }: { boardId: number | null }) {
 
     window.addEventListener('keydown', handleKeyDown, true);
     return () => window.removeEventListener('keydown', handleKeyDown, true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [boardId, selectedId, settings, triggerSave, GRID_SIZE]);
 
   useEffect(() => {
@@ -251,7 +252,7 @@ export default function MemoCanvas({ boardId }: { boardId: number | null }) {
   if (!boardId) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center bg-[#fafafa] dark:bg-zinc-950 text-zinc-400 font-medium relative">
-        <div className="absolute inset-0 bg-[radial-gradient(var(--dot-color)_1px,transparent_1px)] [background-size:32px_32px] opacity-50" />
+        <div className="absolute inset-0 bg-[radial-gradient(var(--dot-color)_1px,transparent_1px)] bg-size-[32px_32px] opacity-50" />
         <p className="z-10 italic font-black uppercase tracking-tighter text-xl">캔버스를 선택하여 아이디어를 펼쳐보세요</p>
       </div>
     );
@@ -289,7 +290,7 @@ export default function MemoCanvas({ boardId }: { boardId: number | null }) {
               }}
               className={`absolute rounded-2xl shadow-sm border transition-[box-shadow,border-color,background-color] duration-200 ${
                 isSelected
-                  ? 'ring-4 ring-yellow-400/30 border-yellow-400 shadow-2xl z-[999]'
+                  ? 'ring-4 ring-yellow-400/30 border-yellow-400 shadow-2xl z-999'
                   : 'border-white dark:border-zinc-800'
               } ${isOverlapping && settings.showOverlapWarning ? 'border-red-500 border-dashed' : ''}`}
               style={{
@@ -306,7 +307,7 @@ export default function MemoCanvas({ boardId }: { boardId: number | null }) {
               }}
             >
                {isSelected && settings.showCoordinates && (
-                  <div className="absolute -bottom-8 left-0 right-0 flex justify-between px-1 pointer-events-none z-[1001]">
+                  <div className="absolute -bottom-8 left-0 right-0 flex justify-between px-1 pointer-events-none z-1001">
                     <span className="bg-zinc-900/80 text-white text-[11px] px-2.5 py-1.5 rounded-lg">
                       pos {Math.round(memo.x)}, {Math.round(memo.y)}
                     </span>
@@ -324,7 +325,7 @@ export default function MemoCanvas({ boardId }: { boardId: number | null }) {
                     e.stopPropagation(); 
                     setPropertyModalMemoId(memo.id); 
                   }}
-                  className="absolute -top-4 -right-2 bg-yellow-400 p-2 rounded-lg shadow-lg z-[1000] cursor-pointer"
+                  className="absolute -top-4 -right-2 bg-yellow-400 p-2 rounded-lg shadow-lg z-1000 cursor-pointer"
                 >
                   <Sparkles className="w-3 h-3 text-yellow-900" />
                 </motion.button>
@@ -382,7 +383,7 @@ export default function MemoCanvas({ boardId }: { boardId: number | null }) {
       {settings.showOverlapWarning && overlapRects.map(rect => (
         <div 
           key={rect.key} 
-          className="absolute bg-red-500/20 border border-red-500/40 pointer-events-none z-[9998] rounded-lg animate-pulse" 
+          className="absolute bg-red-500/20 border border-red-500/40 pointer-events-none z-9998 rounded-lg animate-pulse" 
           style={{ 
             left: rect.x, 
             top: rect.y, 

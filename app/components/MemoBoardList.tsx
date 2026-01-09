@@ -246,7 +246,7 @@ export default function MemoBoardList({
 
         <div className="space-y-6">
           <div>
-            <div className={`flex items-center gap-2 px-3 mb-4 transition-all duration-200 ${isOpen ? 'opacity-100' : 'opacity-0 translate-x-[-10px] pointer-events-none'}`}>
+            <div className={`flex items-center gap-2 px-3 mb-4 transition-all duration-200 ${isOpen ? 'opacity-100' : 'opacity-0 -translate-x-2.5 pointer-events-none'}`}>
               <FolderOpen size={12} className="text-zinc-400 shrink-0" />
               <span className="text-xs font-black text-zinc-400 uppercase tracking-widest whitespace-nowrap">
                 {boards[0]?.user?.name || "User"}&apos;s Workspace
