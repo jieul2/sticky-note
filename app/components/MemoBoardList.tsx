@@ -49,7 +49,6 @@ export default function MemoBoardList({
         const data = await res.json();
         setBoards(data);
       } catch (err: unknown) {
-        // any 대신 unknown을 사용하고 Error 인스턴스인지 확인합니다.
         if (err instanceof Error) {
           console.error("Fetch Error:", err.message);
         } else {
@@ -83,10 +82,10 @@ export default function MemoBoardList({
     <motion.aside
       animate={{ width: isOpen ? 260 : 64 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      className="relative flex flex-col bg-white dark:bg-zinc-950 border-r border-gray-100 dark:border-zinc-800 shadow-xl overflow-hidden transition-colors duration-300"
+      className="relative flex flex-col bg-white dark:bg-zinc-950 border-r border-gray-100 dark:border-zinc-800 shadow-xl transition-colors duration-300"
     >
       {/* 상단 헤더 & 토글 버튼 */}
-      <div className="flex items-center h-16 px-4 shrink-0 relative">
+      <div className="flex items-center h-16 px-4 shrink-0 relative z-10">
         <AnimatePresence mode="wait">
           {isOpen && (
             <motion.div
@@ -115,14 +114,14 @@ export default function MemoBoardList({
 
       {/* 내용 영역 */}
       <div 
-        className="flex-1 overflow-y-auto px-3 py-2 overflow-x-hidden"
+        className="flex-1 overflow-y-auto px-3 py-2 scrollbar-hide"
         style={{
           msOverflowStyle: 'none',
           scrollbarWidth: 'none',
         }}
       >
         <style jsx>{`
-          div::-webkit-scrollbar {
+          .scrollbar-hide::-webkit-scrollbar {
             display: none;
           }
         `}</style>
@@ -155,7 +154,7 @@ export default function MemoBoardList({
                       }`}
                     >
                       {isOpen && (
-                        <GripVertical size={14} className="text-zinc-300 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing" />
+                        <GripVertical size={14} className="text-zinc-300 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing shrink-0" />
                       )}
 
                       <div 
@@ -170,10 +169,15 @@ export default function MemoBoardList({
                               initial={{ opacity: 0, x: -5 }}
                               animate={{ opacity: 1, x: 0 }}
                               exit={{ opacity: 0, x: -5 }}
-                              className={`text-sm font-bold block truncate whitespace-nowrap ${
+                              // title 속성을 다시 추가하여 브라우저 기본 툴팁 제공
+                              title={board.title}
+                              className={`text-sm font-bold block transition-all duration-300 ${
                                 isSelected 
                                   ? "text-yellow-700 dark:text-yellow-400" 
                                   : "text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-200"
+                              } ${
+                                // 마우스를 올렸을 때만 전체 글자가 보이도록 설정 (말풍선 대신 줄바꿈 허용)
+                                "truncate group-hover:whitespace-normal group-hover:break-all"
                               }`}
                             >
                               {board.title}
@@ -198,7 +202,6 @@ export default function MemoBoardList({
               className={`flex items-center mt-4 border-2 border-dashed border-gray-100 dark:border-zinc-800 text-zinc-400 hover:border-yellow-400 hover:text-yellow-500 transition-all text-sm font-bold group overflow-hidden shrink-0 ${
                 isOpen ? "w-full gap-3 p-3.5 rounded-2xl" : "w-12 h-12 mx-auto justify-center rounded-xl"
               }`}
-              title={!isOpen ? "New Board" : ""}
             >
               <div className={`flex items-center justify-center bg-gray-100 dark:bg-zinc-800 rounded-lg group-hover:bg-yellow-100 transition-colors shrink-0 ${isOpen ? 'p-1' : 'w-7 h-7'}`}>
                 <Plus size={isOpen ? 14 : 18} />
