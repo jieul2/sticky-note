@@ -1,17 +1,23 @@
 'use client';
 
 import { useEffect, useState } from "react";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import { 
   Keyboard, 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   Grid3X3, 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   Layers, 
   Sparkles, 
   ArrowRight, 
+   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   Lock, 
   Move, 
   Maximize,
+   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   CheckCircle2,
+   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   Layout,
   Palette,
   Target,
@@ -19,6 +25,7 @@ import {
   Clock,
   PlusSquare
 } from "lucide-react";
+ // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -216,7 +223,7 @@ export default function HelperPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
               {/* 왼쪽: 비주얼 프리뷰 (커서 제거 및 겹침 UI 개선) */}
-              <div className="relative min-h-[400px] bg-zinc-50 dark:bg-zinc-900/50 rounded-[3.5rem] border border-zinc-200 dark:border-zinc-800 shadow-xl overflow-hidden flex items-center justify-center">
+              <div className="relative min-h-100 bg-zinc-50 dark:bg-zinc-900/50 rounded-[3.5rem] border border-zinc-200 dark:border-zinc-800 shadow-xl overflow-hidden flex items-center justify-center">
                 <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
                 
                 {/* 겹쳐진 베이스 메모 */}
