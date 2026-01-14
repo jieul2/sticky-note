@@ -6,7 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  //provider = "mysql"
+  provider = "postgresql"
 }
 
 model User {
@@ -18,38 +19,37 @@ model User {
   memoBoards MemoBoard[]
 }
 
-// prisma/schema.prisma
-
 model MemoBoard {
   id         Int      @id @default(autoincrement())
   title      String
   background String
-  index      Int      @default(0) // 순서 관리를 위한 필드
+  order      Int      @default(0) // 🔁 index → order (예약어 회피)
   userId     Int
-  user       User     @relation(fields: [userId], references: [id])
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   memos      Memo[]
   createdAt  DateTime @default(now())
-  updatedAt  DateTime @default(now()) @updatedAt // 기존 데이터 에러 방지용
+  updatedAt  DateTime @updatedAt
 }
 
 model Memo {
-  id              Int       @id @default(autoincrement())
+  id              Int      @id @default(autoincrement())
   boardId         Int
-  content         String    @db.LongText
-  x               Int       @default(0)
-  y               Int       @default(0)
-  width           Int       @default(200)
-  height          Int       @default(100)
-  fontSize        Int       @default(14)
-  fontColor       String    @default("#000000")
-  fontWeight      String    @default("normal")
-  fontFamily      String    @default("Arial")
-  backgroundColor String    @default("#ffffff")
-  borderWidth     Int       @default(1)
-  borderColor     String    @default("#000000")
-  overflow        String    @default("hidden")
-  textAlign       String    @default("left")
-  verticalAlign   String    @default("top")
-  modifiedAt      DateTime  @updatedAt
-  board           MemoBoard @relation(fields: [boardId], references: [id])
+  content         String // 🔥 @db.LongText 제거 (Postgres TEXT)
+  x               Int      @default(0)
+  y               Int      @default(0)
+  width           Int      @default(200)
+  height          Int      @default(100)
+  fontSize        Int      @default(14)
+  fontColor       String   @default("#000000")
+  fontWeight      String   @default("normal")
+  fontFamily      String   @default("Arial")
+  backgroundColor String   @default("#ffffff")
+  borderWidth     Int      @default(1)
+  borderColor     String   @default("#000000")
+  overflow        String   @default("hidden")
+  textAlign       String   @default("left")
+  verticalAlign   String   @default("top")
+  modifiedAt      DateTime @updatedAt
+
+  board MemoBoard @relation(fields: [boardId], references: [id], onDelete: Cascade)
 }
