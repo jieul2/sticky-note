@@ -10,6 +10,8 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@radix-ui/react-label": "^1.0.0",
+    "jsonwebtoken": "^9.0.0",
     "@prisma/client": "^7.2.0",
     "@radix-ui/react-slot": "^1.2.4",
     "bcrypt": "^6.0.0",
