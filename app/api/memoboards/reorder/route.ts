@@ -24,7 +24,7 @@ export async function POST(req: Request) {
               // 에러 해결 지점: id가 DB에서 Int(number) 타입이므로 Number()로 변환
               where: { id: Number(id) }, 
               data: { 
-                index: idx 
+                order: idx 
               },
             })
           ),

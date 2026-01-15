@@ -24,7 +24,7 @@ export async function GET() {
       // 🔥 정렬 기준을 index로 변경합니다. 
       // index가 같을 경우를 대비해 id 순서를 2순위로 둡니다.
       orderBy: [
-        { index: "asc" },
+        { order: "asc" },
         { id: "asc" }
       ],
     });
@@ -49,16 +49,16 @@ export async function POST(req: Request) {
     // 새 보드 추가 시 가장 큰 index + 1을 부여합니다.
     const lastBoard = await prisma.memoBoard.findFirst({
       where: { userId: Number(userId) },
-      orderBy: { index: 'desc' },
+      orderBy: { order: 'desc' },
     });
     
-    const newIndex = lastBoard ? lastBoard.index + 1 : 0;
+    const newIndex = lastBoard ? lastBoard.order + 1 : 0;
 
     const newBoard = await prisma.memoBoard.create({
       data: {
         title,
         background,
-        index: newIndex,
+        order: newIndex,
         userId: Number(userId),
       },
     });
