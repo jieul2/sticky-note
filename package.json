@@ -33,6 +33,7 @@
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.1",
     "@tailwindcss/postcss": "^4",
     "@types/bcrypt": "^6.0.0",
     "@types/node": "^20.19.27",
