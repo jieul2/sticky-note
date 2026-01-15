@@ -14,7 +14,7 @@ import {
 
 export default function Homepage() {
   return (
-    <main className="min-h-screen bg-[#fafafa] dark:bg-zinc-950 text-foreground overflow-hidden relative">
+    <main className="h-screen overflow-y-auto bg-[#fafafa] dark:bg-zinc-950 text-foreground relative">
       {/* 배경 장식: 메모지들이 흩뿌려진 듯한 느낌의 도트 배경 */}
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:32px_32px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_70%,transparent_100%)]" />
 
