@@ -137,6 +137,7 @@ export default function SettingsPage() {
         const error = await response.json();
         alert(error.message || "수정에 실패했습니다.");
       }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
       alert("서버 오류가 발생했습니다.");
     } finally {
@@ -311,7 +312,7 @@ export default function SettingsPage() {
                       </div>
                     </div>
 
-                    <div className="min-h-[20px]">
+                    <div className="min-h-5">
                       <AnimatePresence mode="wait">
                         {showNewPwError && (
                           <motion.p key="len" initial={{ opacity: 0, x: -5 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 5 }} className="text-[11px] text-red-500 flex items-center gap-1 font-medium"><AlertCircle className="w-3 h-3" /> 비밀번호는 8자 이상이어야 합니다.</motion.p>

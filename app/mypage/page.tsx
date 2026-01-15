@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { 
   User, StickyNote, LogOut, Settings, 
   Clock, ChevronRight, BarChart3, Plus, 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   Palette, CalendarDays
 } from "lucide-react";
 
@@ -151,7 +152,7 @@ export default function Mypage() {
 
         {/* 최근 보드 리스트 */}
         <div className="md:col-span-2 space-y-6">
-          <Card className="border-none shadow-xl rounded-[2.5rem] bg-white dark:bg-zinc-900 min-h-[500px]">
+          <Card className="border-none shadow-xl rounded-[2.5rem] bg-white dark:bg-zinc-900 min-h-125">
             <CardHeader className="flex flex-row items-center justify-between border-b border-zinc-50 dark:border-zinc-800 mx-8 px-0 py-8">
               <CardTitle className="text-xl font-black flex items-center gap-3">
                 <Clock className="w-6 h-6" style={{ color: themeColor }} /> 최근 작업 항목
