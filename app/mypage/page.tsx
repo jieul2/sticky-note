@@ -74,7 +74,7 @@ export default function Mypage() {
   const themeColor = user?.color || "#facc15";
 
   return (
-    <section className="mx-auto max-w-6xl px-6 py-12 space-y-10 min-h-screen bg-[#fafafa] dark:bg-zinc-950">
+    <section className="h-screen overflow-y-auto mx-auto max-w-6xl px-6 py-12 space-y-10 bg-[#fafafa] dark:bg-zinc-950">
       {/* 테마 컬러가 적용된 배너 */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }} 
@@ -104,7 +104,7 @@ export default function Mypage() {
         </div>
       </motion.div>
 
-      <div className="grid gap-8 md:grid-cols-3">
+      <div className="grid gap-8 md:grid-cols-3 pb-24">
         {/* 프로필 카드 */}
         <div className="md:col-span-1 space-y-6">
           <Card className="border-none shadow-xl rounded-[2.5rem] bg-white dark:bg-zinc-900 overflow-hidden">

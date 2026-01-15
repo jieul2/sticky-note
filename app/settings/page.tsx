@@ -151,7 +151,7 @@ export default function SettingsPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50/50 dark:bg-zinc-950 py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-300">
+    <div className="h-screen overflow-y-auto bg-gray-50/50 dark:bg-zinc-950 py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-300">
       <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="max-w-2xl mx-auto space-y-8">
         
         {/* 헤더 섹션 */}
@@ -167,7 +167,7 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <form onSubmit={handleUpdateProfile} className="space-y-6">
+        <form onSubmit={handleUpdateProfile} className="space-y-6 pb-24">
           
           {/* 1. 테마 컬러 섹션 */}
           <Card className="border-none shadow-md overflow-hidden bg-white dark:bg-zinc-900 dark:border dark:border-zinc-800">
