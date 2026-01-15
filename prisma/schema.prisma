@@ -6,7 +6,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  // 🔥 Prisma 7에서는 url 속성을 여기에 적으면 에러가 발생합니다.
 }
 
 model User {
